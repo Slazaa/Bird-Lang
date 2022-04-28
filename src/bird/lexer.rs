@@ -1,9 +1,64 @@
+use std::fs;
+
 use super::error::*;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum TokenType {
 	Operator,
 	Literal
+}
+
+#[derive(Clone)]
+pub struct Position {
+	index: i32,
+	line: i32,
+	colomn: i32,
+	filename: String,
+	file_text: String
+}
+
+impl Position {
+	pub fn new(index: i32, line: i32, colomn: i32, filename: &str, file_text: &str) -> Self {
+		Self {
+			index,
+			line,
+			colomn,
+			filename: filename.to_owned(),
+			file_text: file_text.to_owned()
+		}
+	}
+
+	pub fn index(&self) -> i32 {
+		self.index
+	}
+
+	pub fn line(&self) -> i32 {
+		self.line
+	}
+
+	pub fn colomn(&self) -> i32 {
+		self.colomn
+	}
+
+	pub fn filname(&self) -> &str {
+		self.filename.as_str()
+	}
+
+	pub fn file_text(&self) -> &str {
+		self.file_text.as_str()
+	}
+
+	pub fn advance(&mut self, current_char: Option<char>) {
+		self.index += 1;
+		self.colomn += 1;
+
+		if let Some(current_char) = current_char {
+			if current_char == '\n' {
+				self.line += 1;
+				self.colomn = 0;
+			}
+		}
+	}
 }
 
 pub struct Token {
@@ -29,33 +84,43 @@ impl Token {
 }
 
 pub struct Lexer {
-	text: Vec<char>,
-	pos: i32,
+	text: String,
+	pos: Position,
 	current_char: Option<char>
 }
 
 impl Lexer {
-	fn new(text: &str) -> Self {
+	fn new(filename: &str) -> Result<Self, Error> {
+		let text = match fs::read_to_string(filename) {
+			Ok(x) => x,
+			Err(_) => return Err(NoFileOrDirError::new(None, filename))
+		};
+
 		let mut lexer = Self {
-			text: text.to_owned().chars().collect(),
-			pos: -1,
+			text: text.clone(),
+			pos: Position::new(-1, 0, -1, filename, text.as_str()),
 			current_char: None
 		};
 
 		lexer.advance();
-		lexer
+		
+		Ok(lexer)
 	}
 
-	pub fn parse(text: &str) -> Result<Vec<Token>, Error> {
-		let mut lexer = Self::new(text);
+	pub fn parse(filename: &str) -> Result<Vec<Token>, Error> {
+		let mut lexer = match Self::new(filename) {
+			Ok(x) => x,
+			Err(e) => return Err(e)
+		};
+
 		lexer.make_tokens()
 	}
 
 	fn advance(&mut self) {
-		self.pos += 1;
+		self.pos.advance(self.current_char);
 
-		if self.pos < self.text.len() as i32 {
-			self.current_char = Some(*self.text.get(self.pos as usize).unwrap());
+		if self.pos.index() < self.text.len() as i32 {
+			self.current_char = Some(self.text.chars().nth(self.pos.index() as usize).unwrap());
 		} else {
 			self.current_char = None;
 		}
@@ -81,8 +146,9 @@ impl Lexer {
 				tokens.push(Token::new(TokenType::Operator, str_c.as_str()));
 				self.advance();
 			} else {
+				let pos_start = self.pos.clone();
 				self.advance();
-				return Err(IllegalCharError::new(format!("'{}'", c).as_str()));
+				return Err(IllegalCharError::new(Some((pos_start, self.pos.clone())), format!("'{}'", c).as_str()));
 			}
 		}
 

@@ -1,17 +1,10 @@
 pub mod error;
 pub mod lexer;
 
-use std::fs;
-
 use self::error::*;
 
 pub fn run(filename: &str) -> Result<(), Error> {
-	let file_content = match fs::read_to_string(filename) {
-		Ok(x) => x,
-		Err(_) => return Err(NoFileOrDirError::new(filename))
-	};
-
-	let tokens = match lexer::Lexer::parse(&file_content) {
+	let tokens = match lexer::Lexer::parse(&filename) {
 		Ok(x) => x,
 		Err(e) => return Err(e)
 	};
