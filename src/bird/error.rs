@@ -15,6 +15,18 @@ impl Error {
 		}
 	}
 
+	pub fn no_file_or_dir(position: Option<(Position, Position)>, details: &str) -> Self {
+		Error::new(position, "No such file or directory", details)
+	}
+
+	pub fn illegal_char(position: Option<(Position, Position)>, details: &str) -> Self {
+		Error::new(position, "Illegal character", details)
+	}
+
+	pub fn invalid_syntax(position: Option<(Position, Position)>, details: &str) -> Self {
+		Error::new(position, "Invalid syntax", details)
+	}
+
 	pub fn as_string(&self) -> String {
 		let mut result = String::new();
 
@@ -25,21 +37,5 @@ impl Error {
 		result.push_str(format!("{}: {}", self.error_name, self.details).as_str());
 
 		result
-	}
-}
-
-pub struct NoFileOrDirError;
-
-impl NoFileOrDirError {
-	pub fn new(position: Option<(Position, Position)>, details: &str) -> Error {
-		Error::new(position, "No such file or directory", details)
-	}
-}
-
-pub struct IllegalCharError;
-
-impl IllegalCharError {
-	pub fn new(position: Option<(Position, Position)>, details: &str) -> Error {
-		Error::new(position, "Illegal character", details)
 	}
 }

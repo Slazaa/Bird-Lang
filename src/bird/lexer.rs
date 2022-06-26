@@ -8,7 +8,7 @@ pub enum TokenType {
 	Literal
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default, Debug)]
 pub struct Position {
 	index: i32,
 	line: i32,
@@ -61,16 +61,24 @@ impl Position {
 	}
 }
 
+#[derive(Clone, Debug)]
 pub struct Token {
 	token_type: TokenType,
-	symbol: String
+	symbol: String,
+	pos_start: Position,
+	pos_end: Position
 }
 
 impl Token {
-	pub fn new(token_type: TokenType, symbol: &str) -> Self {
+	pub fn new(token_type: TokenType, symbol: &str, pos_start: Position, pos_end: Option<Position>) -> Self {
 		Self {
 			token_type,
-			symbol: symbol.to_owned()
+			symbol: symbol.to_owned(),
+			pos_start: pos_start.clone(),
+			pos_end: match pos_end {
+				Some(x) => x,
+				None => pos_start
+			}
 		}
 	}
 
@@ -78,8 +86,16 @@ impl Token {
 		&self.token_type
 	}
 
-	pub fn symbol(&self) -> &String {
+	pub fn symbol(&self) -> &str {
 		&self.symbol
+	}
+
+	pub fn pos_start(&self) -> &Position {
+		&self.pos_start
+	}
+
+	pub fn pos_end(&self) -> &Position {
+		&self.pos_end
 	}
 }
 
@@ -93,7 +109,7 @@ impl Lexer {
 	fn new(filename: &str) -> Result<Self, Error> {
 		let text = match fs::read_to_string(filename) {
 			Ok(x) => x,
-			Err(_) => return Err(NoFileOrDirError::new(None, filename))
+			Err(_) => return Err(Error::no_file_or_dir(None, filename))
 		};
 
 		let mut lexer = Self {
@@ -143,12 +159,12 @@ impl Lexer {
 			} else if c.is_digit(10) {
 				tokens.push(self.make_number());	
 			} else if operators.contains(&str_c.as_str()) {
-				tokens.push(Token::new(TokenType::Operator, str_c.as_str()));
+				tokens.push(Token::new(TokenType::Operator, str_c.as_str(), self.pos.clone(), None));
 				self.advance();
 			} else {
 				let pos_start = self.pos.clone();
 				self.advance();
-				return Err(IllegalCharError::new(Some((pos_start, self.pos.clone())), format!("'{}'", c).as_str()));
+				return Err(Error::illegal_char(Some((pos_start, self.pos.clone())), format!("'{}'", c).as_str()));
 			}
 		}
 
@@ -158,6 +174,7 @@ impl Lexer {
 	fn make_number(&mut self) -> Token {
 		let mut num_str = String::new();
 		let mut dot_count = 0;
+		let pos_start = self.pos.clone();
 
 		while self.current_char != None && (self.current_char.unwrap().is_digit(10) || self.current_char.unwrap() == '.') {
 			let c = self.current_char.unwrap();
@@ -176,6 +193,6 @@ impl Lexer {
 			self.advance()
 		}
 
-		Token::new(TokenType::Literal, &num_str)
+		Token::new(TokenType::Literal, &num_str, pos_start, Some(self.pos.clone()))
 	}
 }
