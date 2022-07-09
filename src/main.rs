@@ -1,4 +1,7 @@
-use std::{env, cmp::Ordering};
+use std::env;
+use std::cmp::Ordering;
+
+use crate::bird::error::Error;
 
 mod bird;
 
@@ -7,26 +10,16 @@ fn main() {
 
 	match args.len().cmp(&2) {
 		Ordering::Less => {
-			println!("No input file");
+			println!("{}", Error::no_file_or_dir(None, "No input file").as_string());
 			return;
 		}
 		Ordering::Greater => {
-			println!("Unknown argument {}", args[2]);
+			println!("{}", Error::invalid_syntax(None, &format!("Unknown argument '{}'", args[2])).as_string());
 			return;
 		}
 		_ => ()
 	}
-/*
-	if args.len() < 2 {
-		println!("No input file");
-		return;
-	}
 
-	for arg in args.iter().skip(2) {
-		println!("Unknown argument {}", arg);
-		return;
-	}
-*/
 	match bird::run(&args[1]) {
 		Ok(_) => (),
 		Err(e) => println!("{}", e.as_string())

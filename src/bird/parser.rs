@@ -1,18 +1,10 @@
 use super::lexer::{Token, TokenType};
 use super::error::Error;
 
-#[derive(Clone, Copy, Debug)]
-pub enum Operator {
-	Add,
-	Sub,
-	Mult,
-	Div
-}
-
 #[derive(Clone, Debug)]
 pub enum NodeItem {
 	Literal(String),
-	Operator(Operator)
+	Operator(String)
 }
 
 #[derive(Debug)]
@@ -103,13 +95,11 @@ impl Parser {
 					break;
 				}
 
-				let token_operator = NodeItem::Operator(match token.symbol() {
-					"+" => Operator::Add,
-					"-" => Operator::Sub,
-					"*" => Operator::Mult,
-					"/" => Operator::Div,
-					_ => return Err(Error::invalid_syntax(Some((token.pos_start().clone(), token.pos_end().clone())), "Invalid operator"))
-				});
+				if !"+-*/".contains(token.symbol()) {
+					return Err(Error::invalid_syntax(Some((token.pos_start().clone(), token.pos_end().clone())), "Invalid operator"))
+				}
+
+				let token_operator = NodeItem::Operator(token.symbol().to_owned());
 
 				self.advance();
 
