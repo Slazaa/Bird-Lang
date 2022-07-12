@@ -1,7 +1,7 @@
 use std::env;
 use std::cmp::Ordering;
 
-use crate::bird::error::Error;
+use crate::bird::feedback::*;
 
 mod bird;
 
@@ -10,7 +10,7 @@ fn main() {
 
 	match args.len().cmp(&2) {
 		Ordering::Less => {
-			println!("{}", Error::no_file_or_dir(None, "No input file").as_string());
+			println!("{}", Error::no_input_file().as_string());
 			return;
 		}
 		Ordering::Greater => {

@@ -4,10 +4,10 @@
 
 ## Hello, World!
 ```bird
-import standard.console;
+import bird::console;
 
 func main()
 {
-	console.output_line("Hello, World!");
+	console::output_line("Hello, World!");
 }
 ```

@@ -1,5 +1,5 @@
 use super::lexer::{Token, TokenType};
-use super::error::Error;
+use super::feedback::*;
 
 #[derive(Clone, Debug)]
 pub enum NodeItem {
@@ -29,15 +29,17 @@ impl Node {
 pub struct Parser {
 	tokens: Vec<Token>,
 	token_index: i32,
-	current_token: Option<Token>
+	current_token: Option<Token>,
+	last_token: Option<Token>
 }
 
 impl Parser {
-	pub fn parse(tokens: Vec<Token>) -> Result<Node, Error> {
+	pub fn parse(tokens: Vec<Token>) -> Result<Node, Feedback> {
 		let mut parser = Self { 
 			tokens,
 			token_index: -1,
-			current_token: None
+			current_token: None,
+			last_token: None
 		};
 
 		parser.advance();
@@ -52,32 +54,32 @@ impl Parser {
 			return;
 		}
 
+		self.last_token = self.current_token.clone();
 		self.current_token = None;
 	}
 
-	fn factor(&mut self) -> Result<Node, Error> {
-		let token = match self.current_token.clone() {
-			Some(x) => x,
-			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
-		};
-
-		if *token.token_type() == TokenType::Literal {
-			self.advance();
-			return Ok(Node::new(NodeItem::Literal(token.symbol().to_owned())));
+	fn factor(&mut self) -> Result<Node, Feedback> {
+		if let Some(token) = self.current_token.clone() {
+			if *token.token_type() == TokenType::Literal {
+				self.advance();
+				return Ok(Node::new(NodeItem::Literal(token.symbol().to_owned())));
+			}
 		}
 
-		Err(Error::invalid_syntax(Some((token.pos_start().clone(), token.pos_end().clone())), "Expected number"))
+		let last_token = self.last_token.clone().unwrap();
+
+		Err(Error::invalid_syntax(Some((last_token.pos_start().clone(), last_token.pos_end().clone())), "Expected number"))
 	}
 
-	fn term(&mut self) -> Result<Node, Error> {
+	fn term(&mut self) -> Result<Node, Feedback> {
 		self.binary_op(Self::factor, "*/")
 	}
 
-	fn expr(&mut self) -> Result<Node, Error> {
+	fn expr(&mut self) -> Result<Node, Feedback> {
 		self.binary_op(Self::term, "+-")
 	}
 
-	fn binary_op(&mut self, func: fn(&mut Self) -> Result<Node, Error>, operators: &str) -> Result<Node, Error> {
+	fn binary_op(&mut self, func: fn(&mut Self) -> Result<Node, Feedback>, operators: &str) -> Result<Node, Feedback> {
 		let mut left = func(self)?;
 
 		if let Some(token) = self.current_token.clone() {

@@ -36,38 +36,17 @@ func main()
 | int   |             |
 | uint  |             |
 | float |             |
+Numbers can be separated with a an underscore `_` as a visual separator so numbers are easier to read such as `1_000_000`.
+Numbers can be represented under different bases wich are:
+| Base    | Example     |
+|---------|-------------|
+| Decimal | 42          |
+| Hex     | 0xAF        |
+| Octal   | 0o53        |
+| Binary  | 0b0110_1110 |
 
 ### Compund
 | Type  | Description |
 |-------|-------------|
 | tuple |             |
 | array |             |
-
-## Mutability
-By default variables are immutable.
-For example this code won't compile:
-```bird
-import standard.console;
-
-func main()
-{
-	var my_var = 10;
-	console.output_line("The value of 'x' is: " + string.parse(my_var));
-	my_var = 25;
-	console.output_line("The value of 'x' is: " + string.parse(my_var));
-}
-```
-Because the variable 'x' is immutable by default, changing its value causes an error.
-To fix this problem, we just have to use the keyword `mut` after the `var` keyword like this:
-```bird
-import standard.console;
-
-func main()
-{
-	var mut my_var = 10;
-	console.output_line("The value of 'x' is: " + string.parse(my_var));
-	my_var = 25;
-	console.output_line("The value of 'x' is: " + string.parse(my_var));
-}
-```
-Now the program should work fine!

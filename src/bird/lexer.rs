@@ -1,6 +1,6 @@
 use std::fs;
 
-use super::error::*;
+use super::feedback::*;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum TokenType {
@@ -13,18 +13,16 @@ pub struct Position {
 	index: i32,
 	line: i32,
 	colomn: i32,
-	filename: String,
-	file_text: String
+	filename: String
 }
 
 impl Position {
-	pub fn new(index: i32, line: i32, colomn: i32, filename: &str, file_text: &str) -> Self {
+	pub fn new(index: i32, line: i32, colomn: i32, filename: &str) -> Self {
 		Self {
 			index,
 			line,
 			colomn,
-			filename: filename.to_owned(),
-			file_text: file_text.to_owned()
+			filename: filename.to_owned()
 		}
 	}
 
@@ -42,10 +40,6 @@ impl Position {
 
 	pub fn filname(&self) -> &str {
 		self.filename.as_str()
-	}
-
-	pub fn file_text(&self) -> &str {
-		self.file_text.as_str()
 	}
 
 	pub fn advance(&mut self, current_char: Option<char>) {
@@ -106,15 +100,15 @@ pub struct Lexer {
 }
 
 impl Lexer {
-	fn new(filename: &str) -> Result<Self, Error> {
+	fn new(filename: &str) -> Result<Self, Feedback> {
 		let text = match fs::read_to_string(filename) {
 			Ok(x) => x,
-			Err(_) => return Err(Error::no_file_or_dir(None, filename))
+			Err(_) => return Err(Error::no_file_or_dir(filename))
 		};
 
 		let mut lexer = Self {
 			text: text.clone(),
-			pos: Position::new(-1, 0, -1, filename, text.as_str()),
+			pos: Position::new(-1, 0, -1, filename),
 			current_char: None
 		};
 
@@ -123,7 +117,7 @@ impl Lexer {
 		Ok(lexer)
 	}
 
-	pub fn parse(filename: &str) -> Result<Vec<Token>, Error> {
+	pub fn parse(filename: &str) -> Result<Vec<Token>, Feedback> {
 		let mut lexer = match Self::new(filename) {
 			Ok(x) => x,
 			Err(e) => return Err(e)
@@ -142,7 +136,7 @@ impl Lexer {
 		}
 	}
 
-	fn make_tokens(&mut self) -> Result<Vec<Token>, Error> {
+	fn make_tokens(&mut self) -> Result<Vec<Token>, Feedback> {
 		let operators = vec![
 			// Arithmetic
 			"+", "-", "*", "/", "%"
@@ -164,7 +158,7 @@ impl Lexer {
 			} else {
 				let pos_start = self.pos.clone();
 				self.advance();
-				return Err(Error::illegal_char(Some((pos_start, self.pos.clone())), format!("'{}'", c).as_str()));
+				return Err(Error::illegal_char((pos_start, self.pos.clone()), format!("'{}'", c).as_str()));
 			}
 		}
 
