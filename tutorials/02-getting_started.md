@@ -4,7 +4,7 @@
 
 ## Hello, World!
 ```bird
-import bird::console;
+import bird::io::console;
 
 func main()
 {

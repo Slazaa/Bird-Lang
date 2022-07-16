@@ -29,10 +29,13 @@ pub struct Feedback {
 }
 
 impl Feedback {
-	pub fn new(feedback_type: FeedbackType, position: Option<(Position, Position)>, description: &str) -> Self {
+	pub fn new(feedback_type: FeedbackType, position: Option<(&Position, &Position)>, description: &str) -> Self {
 		Self {
 			feedback_type,
-			position,
+			position: match position {
+				Some((pos_start, pos_end)) => Some((pos_start.clone(), pos_end.clone())),
+				None => None
+			},
 			description: description.to_owned()
 		}
 	}
@@ -42,19 +45,27 @@ impl Feedback {
 
 		result.push_str(format!("{}: {}", self.feedback_type, self.description).as_str());
 
-		if let Some((pos_start, _pos_end)) = &self.position {
+		if let Some((pos_start, pos_end)) = &self.position {
 			let line_string = format!("{}", pos_start.line() + 1);
-
 			result.push_str(format!("\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).as_str());
 
 			let mut pipe: String = (0..=line_string.len()).map(|_| ' ')
 				.collect();
-			
 			pipe.push('|');
 
 			let mut pipe_line = String::from(" |");
-
 			pipe_line.insert_str(0, &line_string);
+
+			let mut pipe_down = pipe.clone();
+			pipe_down.push(' ');
+
+			for _ in 0..pos_start.colomn() {
+				pipe_down.push(' ');
+			}
+
+			for _ in pos_start.colomn()..=pos_end.colomn() {
+				pipe_down.push('^');
+			}
 
 			let file = File::open(pos_start.filname()).unwrap();
 			let reader = BufReader::new(file);
@@ -66,7 +77,7 @@ impl Feedback {
 
 			result.push_str(&format!("\n{}", pipe));
 			result.push_str(&format!("\n{} {}", pipe_line, line_text));
-			result.push_str(&format!("\n{}", pipe));
+			result.push_str(&format!("\n{}", pipe_down));
 		}
 
 		result
@@ -88,11 +99,11 @@ impl Warning {
 pub struct Error;
 
 impl Error {
-	pub fn illegal_char(position: (Position, Position), description: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error, Some(position), description)
+	pub fn illegal_char(position: (&Position, &Position), character: char) -> Feedback {
+		Feedback::new(FeedbackType::Error, Some(position), &format!("Illegal character '{}'", character))
 	}
 
-	pub fn invalid_syntax(position: Option<(Position, Position)>, description: &str) -> Feedback {
+	pub fn invalid_syntax(position: Option<(&Position, &Position)>, description: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, position, description)
 	}
 

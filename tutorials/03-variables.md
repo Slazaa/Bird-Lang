@@ -6,24 +6,28 @@ A variable is declared with the keyworkd `var` followed by its name, a colomn an
 ```bird
 func main()
 {
-	var my_var: int;
+	var x: int;
 }
 ```
-You can initilize it or assign it a value after it is declared:
+You can initilize it or assign it a value after it has been declared:
 ```bird
 func main()
 {
-	var my_var: int = 10; // We are initializing the variable to 10
+	var x: int = 10; // We initialize the variable to 10
 	// Or
-	var my_var: int; // We declare the variable
-	my_var = 10; // Then assign it a value
+	var x: int; // We declare the variable
+	x = 10; // Then assign it the value 10
 }
 ```
-When initialized, the type of the variable can be omitted:
+You cannot read from a variable that has not been initialized
+For instance, this code is invalid:
 ```bird
+import bird::io::console;
+
 func main()
 {
-	var my_var = 10; // We don't need to precise the type because 10 is of type int by default
+	var x: int;
+	console::output_line(x.parse<String>().unwrap()); // We are reading from 'x' but it has no value
 }
 ```
 

@@ -59,20 +59,31 @@ impl Parser {
 	}
 
 	fn factor(&mut self) -> Result<Node, Feedback> {
-		if let Some(token) = self.current_token.clone() {
-			if *token.token_type() == TokenType::Literal {
-				self.advance();
-				return Ok(Node::new(NodeItem::Literal(token.symbol().to_owned())));
-			}
+		let current_token = match self.current_token.clone() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
+
+		if *current_token.token_type() == TokenType::Literal {
+			self.advance();
+			return Ok(Node::new(NodeItem::Literal(current_token.symbol().to_owned())));
 		}
 
-		let last_token = self.last_token.clone().unwrap();
+		if let Some(last_token) = self.last_token.clone() {
+			let mut pos_start = last_token.pos_start().clone();
+			let mut pos_end = last_token.pos_end().clone();
 
-		Err(Error::invalid_syntax(Some((last_token.pos_start().clone(), last_token.pos_end().clone())), "Expected number"))
+			*pos_start.colomn_mut() += 2;
+			*pos_end.colomn_mut() += 2;
+
+			return Err(Error::invalid_syntax(Some((&pos_start, &pos_end)), "Expected number"));
+		}
+
+		Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), &format!("Expected number found '{}'", current_token.symbol())))
 	}
 
 	fn term(&mut self) -> Result<Node, Feedback> {
-		self.binary_op(Self::factor, "*/")
+		self.binary_op(Self::factor, "*/%")
 	}
 
 	fn expr(&mut self) -> Result<Node, Feedback> {
@@ -84,21 +95,16 @@ impl Parser {
 
 		if let Some(token) = self.current_token.clone() {
 			if *token.token_type() != TokenType::Operator {
-				return Err(Error::invalid_syntax(Some((token.pos_start().clone(), token.pos_end().clone())), "Expected operator"));
+				return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Expected operator"));
 			}
 
-			loop {
-				let token = match self.current_token.clone() {
-					Some(x) => x,
-					None => break
-				};
-
+			while let Some(token) = self.current_token.clone() {
 				if !operators.contains(token.symbol()) {
 					break;
 				}
 
 				if !"+-*/".contains(token.symbol()) {
-					return Err(Error::invalid_syntax(Some((token.pos_start().clone(), token.pos_end().clone())), "Invalid operator"))
+					return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Invalid operator"))
 				}
 
 				let token_operator = NodeItem::Operator(token.symbol().to_owned());

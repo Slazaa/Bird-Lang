@@ -38,6 +38,10 @@ impl Position {
 		self.colomn
 	}
 
+	pub fn colomn_mut(&mut self) -> &mut i32 {
+		&mut self.colomn
+	}
+
 	pub fn filname(&self) -> &str {
 		self.filename.as_str()
 	}
@@ -107,7 +111,7 @@ impl Lexer {
 		};
 
 		let mut lexer = Self {
-			text: text.clone(),
+			text,
 			pos: Position::new(-1, 0, -1, filename),
 			current_char: None
 		};
@@ -123,7 +127,32 @@ impl Lexer {
 			Err(e) => return Err(e)
 		};
 
-		lexer.make_tokens()
+		let operators = vec![
+			// Arithmetic
+			"+", "-", "*", "/", "%"
+		];
+
+		let mut tokens = Vec::new();
+
+		while lexer.current_char != None {
+			let c = lexer.current_char.unwrap();
+			let str_c = c.to_string();
+
+			if " \n\r\t".contains(&str_c) {
+				lexer.advance();
+			} else if c.is_digit(10) {
+				tokens.push(lexer.make_number());	
+			} else if operators.contains(&str_c.as_str()) {
+				tokens.push(Token::new(TokenType::Operator, str_c.as_str(), lexer.pos.clone(), None));
+				lexer.advance();
+			} else {
+				let pos_start = lexer.pos.clone();
+				lexer.advance();
+				return Err(Error::illegal_char((&pos_start, &pos_start), c));
+			}
+		}
+
+		Ok(tokens)
 	}
 
 	fn advance(&mut self) {
@@ -136,42 +165,17 @@ impl Lexer {
 		}
 	}
 
-	fn make_tokens(&mut self) -> Result<Vec<Token>, Feedback> {
-		let operators = vec![
-			// Arithmetic
-			"+", "-", "*", "/", "%"
-		];
-
-		let mut tokens = Vec::new();
-
-		while self.current_char != None {
-			let c = self.current_char.unwrap();
-			let str_c = c.to_string();
-
-			if " \t".contains(&str_c) {
-				self.advance();
-			} else if c.is_digit(10) {
-				tokens.push(self.make_number());	
-			} else if operators.contains(&str_c.as_str()) {
-				tokens.push(Token::new(TokenType::Operator, str_c.as_str(), self.pos.clone(), None));
-				self.advance();
-			} else {
-				let pos_start = self.pos.clone();
-				self.advance();
-				return Err(Error::illegal_char((pos_start, self.pos.clone()), format!("'{}'", c).as_str()));
-			}
-		}
-
-		Ok(tokens)
-	}
-
 	fn make_number(&mut self) -> Token {
 		let mut num_str = String::new();
 		let mut dot_count = 0;
 		let pos_start = self.pos.clone();
 
-		while self.current_char != None && (self.current_char.unwrap().is_digit(10) || self.current_char.unwrap() == '.') {
-			let c = self.current_char.unwrap();
+		while let Some(current_char) = self.current_char {
+			if !current_char.is_digit(10) && current_char != '.' {
+				break;
+			}
+
+			let c = current_char;
 
 			if c == '.' {
 				if dot_count == 1 {
@@ -184,7 +188,7 @@ impl Lexer {
 				num_str.push(c);
 			}
 
-			self.advance()
+			self.advance();
 		}
 
 		Token::new(TokenType::Literal, &num_str, pos_start, Some(self.pos.clone()))
