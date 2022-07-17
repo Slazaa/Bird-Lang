@@ -5,16 +5,12 @@ use std::io::{BufReader, BufRead};
 use super::lexer::Position;
 
 pub enum FeedbackType {
-	Info,
-	Warning,
 	Error
 }
 
 impl Display for FeedbackType {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let symbol = match self {
-			Self::Info => "Info",
-			Self::Warning => "Warning",
 			Self::Error => "Error"
 		};
 
@@ -32,10 +28,7 @@ impl Feedback {
 	pub fn new(feedback_type: FeedbackType, position: Option<(&Position, &Position)>, description: &str) -> Self {
 		Self {
 			feedback_type,
-			position: match position {
-				Some((pos_start, pos_end)) => Some((pos_start.clone(), pos_end.clone())),
-				None => None
-			},
+			position: position.map(|(pos_start, pos_end)| (pos_start.clone(), pos_end.clone())),
 			description: description.to_owned()
 		}
 	}
@@ -82,18 +75,6 @@ impl Feedback {
 
 		result
 	}
-}
-
-pub struct Info;
-
-impl Info {
-
-}
-
-pub struct Warning;
-
-impl Warning {
-
 }
 
 pub struct Error;

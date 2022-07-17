@@ -1,11 +1,15 @@
 use std::fs;
 
 use super::feedback::*;
+use super::constants::*;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum TokenType {
+	Literal,
 	Operator,
-	Literal
+	Separator,
+	Keyword,
+	Identifier
 }
 
 #[derive(Clone, Default, Debug)]
@@ -68,14 +72,14 @@ pub struct Token {
 }
 
 impl Token {
-	pub fn new(token_type: TokenType, symbol: &str, pos_start: Position, pos_end: Option<Position>) -> Self {
+	pub fn new(token_type: TokenType, symbol: &str, pos_start: &Position, pos_end: Option<&Position>) -> Self {
 		Self {
 			token_type,
 			symbol: symbol.to_owned(),
 			pos_start: pos_start.clone(),
 			pos_end: match pos_end {
-				Some(x) => x,
-				None => pos_start
+				Some(x) => x.clone(),
+				None => pos_start.clone()
 			}
 		}
 	}
@@ -127,14 +131,9 @@ impl Lexer {
 			Err(e) => return Err(e)
 		};
 
-		let operators = vec![
-			// Arithmetic
-			"+", "-", "*", "/", "%"
-		];
-
 		let mut tokens = Vec::new();
 
-		while lexer.current_char != None {
+		while lexer.current_char.is_some() {
 			let c = lexer.current_char.unwrap();
 			let str_c = c.to_string();
 
@@ -142,13 +141,16 @@ impl Lexer {
 				lexer.advance();
 			} else if c.is_digit(10) {
 				tokens.push(lexer.make_number());	
-			} else if operators.contains(&str_c.as_str()) {
-				tokens.push(Token::new(TokenType::Operator, str_c.as_str(), lexer.pos.clone(), None));
-				lexer.advance();
+			} else if c.is_alphabetic() || c == '_' {
+				tokens.push(lexer.make_identifier());
 			} else {
-				let pos_start = lexer.pos.clone();
-				lexer.advance();
-				return Err(Error::illegal_char((&pos_start, &pos_start), c));
+				match lexer.make_operator() {
+					Some(token) => tokens.push(token),
+					None => {
+						let pos_start = lexer.pos.clone();
+						return Err(Error::illegal_char((&pos_start, &pos_start), c));
+					}
+				}
 			}
 		}
 
@@ -160,15 +162,18 @@ impl Lexer {
 
 		if self.pos.index() < self.text.len() as i32 {
 			self.current_char = Some(self.text.chars().nth(self.pos.index() as usize).unwrap());
-		} else {
-			self.current_char = None;
+			return;
 		}
+
+		self.current_char = None;
 	}
 
 	fn make_number(&mut self) -> Token {
-		let mut num_str = String::new();
+		let mut res = String::new();
 		let mut dot_count = 0;
+
 		let pos_start = self.pos.clone();
+		let mut pos_end = pos_start.clone();
 
 		while let Some(current_char) = self.current_char {
 			if !current_char.is_digit(10) && current_char != '.' {
@@ -183,14 +188,101 @@ impl Lexer {
 				}
 
 				dot_count += 1;
-				num_str.push('.');
+				res.push('.');
 			} else {
-				num_str.push(c);
+				res.push(c);
 			}
 
+			pos_end = self.pos.clone();
 			self.advance();
 		}
 
-		Token::new(TokenType::Literal, &num_str, pos_start, Some(self.pos.clone()))
+		Token::new(TokenType::Literal, &res, &pos_start, Some(&pos_end))
+	}
+
+	fn make_identifier(&mut self) -> Token {
+		let mut res = String::new();
+
+		let pos_start = self.pos.clone();
+		let mut pos_end = pos_start.clone();
+
+		while let Some(current_char) = self.current_char {
+			if !current_char.is_alphanumeric() && current_char != '_' {
+				break;
+			}
+
+			res.push(current_char);
+
+			pos_end = self.pos.clone();
+			self.advance();
+		}
+
+		let token_type = if KEYWORDS.contains(&res.as_str()) {
+			TokenType::Keyword
+		} else {
+			TokenType::Identifier
+		};
+
+		Token::new(token_type, &res, &pos_start, Some(&pos_end))
+	}
+
+	fn make_operator(&mut self) -> Option<Token> {
+		let mut res = String::new();
+
+		let pos_start = self.pos.clone();
+		let mut pos_end = pos_start.clone();
+
+		if let Some(current_char) = self.current_char {
+			if !OPERATOR_CHARS.contains(current_char) {
+				return self.make_separator();
+			}
+		}
+
+		while let Some(current_char) = self.current_char {
+			if !OPERATOR_CHARS.contains(current_char) {
+				break;
+			}
+
+			res.push(current_char);
+
+			pos_end = self.pos.clone();
+			self.advance();
+		}
+
+		if !OPERATORS.contains(&res.as_str()) {
+			return self.make_separator();
+		}
+
+		Some(Token::new(TokenType::Operator, &res, &pos_start, Some(&pos_end)))
+	}
+
+	fn make_separator(&mut self) -> Option<Token> {
+		let mut res = String::new();
+
+		let pos_start = self.pos.clone();
+		let mut pos_end = pos_start.clone();
+
+		if let Some(current_char) = self.current_char {
+			if !SEPARATOR_CHARS.contains(current_char) {
+				return None;
+			}
+		}
+
+		while let Some(current_char) = self.current_char {
+			if !SEPARATOR_CHARS.contains(current_char) {
+				break;
+			}
+
+			res.push(current_char);
+
+			pos_end = self.pos.clone();
+			self.advance();
+		}
+
+		if !SEPARATORS.contains(&res.as_str()) {
+			return None;
+		}
+
+		Some(Token::new(TokenType::Separator, &res, &pos_start, Some(&pos_end)))
 	}
 }

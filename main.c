@@ -1,0 +1,1 @@
+uint32 my_var;

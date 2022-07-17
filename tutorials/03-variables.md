@@ -3,13 +3,16 @@
 
 ## Syntax
 A variable is declared with the keyworkd `var` followed by its name, a colomn and its type:
+
 ```bird
 func main()
 {
 	var x: int;
 }
 ```
+
 You can initilize it or assign it a value after it has been declared:
+
 ```bird
 func main()
 {
@@ -19,8 +22,10 @@ func main()
 	x = 10; // Then assign it the value 10
 }
 ```
+
 You cannot read from a variable that has not been initialized
 For instance, this code is invalid:
+
 ```bird
 import bird::io::console;
 
@@ -40,8 +45,10 @@ func main()
 | int   |             |
 | uint  |             |
 | float |             |
+
 Numbers can be separated with a an underscore `_` as a visual separator so numbers are easier to read such as `1_000_000`.
 Numbers can be represented under different bases wich are:
+
 | Base    | Example     |
 |---------|-------------|
 | Decimal | 42          |

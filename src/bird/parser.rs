@@ -1,5 +1,6 @@
 use super::lexer::{Token, TokenType};
 use super::feedback::*;
+use super::constants::*;
 
 #[derive(Clone, Debug)]
 pub enum NodeItem {
@@ -10,19 +11,15 @@ pub enum NodeItem {
 #[derive(Debug)]
 pub struct  Node {
 	entry: NodeItem,
-	children: Vec<Node>
+	children: Option<Vec<Node>>
 }
 
 impl Node {
-	pub fn new(entry: NodeItem) -> Self {
+	pub fn new(entry: NodeItem, children: Option<Vec<Node>>) -> Self {
 		Self {
 			entry,
-			children: Vec::new()
+			children
 		}
-	}
-
-	pub fn children_mut(&mut self) -> &mut Vec<Node> {
-		&mut self.children
 	}
 }
 
@@ -59,14 +56,32 @@ impl Parser {
 	}
 
 	fn factor(&mut self) -> Result<Node, Feedback> {
-		let current_token = match self.current_token.clone() {
-			Some(x) => x,
-			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
-		};
+		let current_token = self.current_token.clone()
+			.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
 
 		if *current_token.token_type() == TokenType::Literal {
 			self.advance();
-			return Ok(Node::new(NodeItem::Literal(current_token.symbol().to_owned())));
+			return Ok(Node::new(NodeItem::Literal(current_token.symbol().to_owned()), None));
+		} else if *current_token.token_type() == TokenType::Operator && "+-".contains(current_token.symbol()) {
+			self.advance();
+			let factor = self.factor()?;
+			return Ok(Node::new(NodeItem::Operator(current_token.symbol().to_owned()), Some(vec![factor])));
+		} else if *current_token.token_type() == TokenType::Separator && "(".contains(current_token.symbol()) {
+			self.advance();
+			let expr = self.expr()?;
+
+			let current_token = self.current_token.clone()
+				.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
+
+			if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
+				self.advance();
+				return Ok(expr);
+			} else {
+				let current_token = self.current_token.clone()
+					.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
+
+				return Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), "Expected ')'"));
+			}
 		}
 
 		if let Some(last_token) = self.last_token.clone() {
@@ -79,7 +94,7 @@ impl Parser {
 			return Err(Error::invalid_syntax(Some((&pos_start, &pos_end)), "Expected number"));
 		}
 
-		Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), &format!("Expected number found '{}'", current_token.symbol())))
+		Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), &format!("Expected number, found '{}'", current_token.symbol())))
 	}
 
 	fn term(&mut self) -> Result<Node, Feedback> {
@@ -90,20 +105,20 @@ impl Parser {
 		self.binary_op(Self::term, "+-")
 	}
 
-	fn binary_op(&mut self, func: fn(&mut Self) -> Result<Node, Feedback>, operators: &str) -> Result<Node, Feedback> {
+	fn binary_op(&mut self, func: fn(&mut Self) -> Result<Node, Feedback>, ops: &str) -> Result<Node, Feedback> {
 		let mut left = func(self)?;
 
 		if let Some(token) = self.current_token.clone() {
-			if *token.token_type() != TokenType::Operator {
-				return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Expected operator"));
+			if *token.token_type() != TokenType::Operator && *token.token_type() != TokenType::Separator {
+				return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), &format!("Expected operator, found '{}'", token.symbol())));
 			}
-
+			
 			while let Some(token) = self.current_token.clone() {
-				if !operators.contains(token.symbol()) {
+				if !ops.contains(token.symbol()) {
 					break;
 				}
 
-				if !"+-*/".contains(token.symbol()) {
+				if !OPERATORS.contains(&token.symbol()) {
 					return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Invalid operator"))
 				}
 
@@ -114,10 +129,7 @@ impl Parser {
 				let old_left = left;
 				let right = func(self)?;
 
-				left = Node::new(token_operator);
-
-				left.children_mut().push(old_left);
-				left.children_mut().push(right);
+				left = Node::new(token_operator, Some(vec![old_left, right]));
 			}
 		}
 
