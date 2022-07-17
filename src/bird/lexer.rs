@@ -257,32 +257,18 @@ impl Lexer {
 	}
 
 	fn make_separator(&mut self) -> Option<Token> {
-		let mut res = String::new();
-
 		let pos_start = self.pos.clone();
-		let mut pos_end = pos_start.clone();
 
 		if let Some(current_char) = self.current_char {
-			if !SEPARATOR_CHARS.contains(current_char) {
+			self.advance();
+
+			if !SEPARATORS.contains(current_char) {
 				return None;
 			}
+
+			return Some(Token::new(TokenType::Separator, &String::from(current_char), &pos_start, Some(&pos_start)));
 		}
 
-		while let Some(current_char) = self.current_char {
-			if !SEPARATOR_CHARS.contains(current_char) {
-				break;
-			}
-
-			res.push(current_char);
-
-			pos_end = self.pos.clone();
-			self.advance();
-		}
-
-		if !SEPARATORS.contains(&res.as_str()) {
-			return None;
-		}
-
-		Some(Token::new(TokenType::Separator, &res, &pos_start, Some(&pos_end)))
+		None
 	}
 }

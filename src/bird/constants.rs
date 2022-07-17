@@ -1,10 +1,4 @@
-pub static SEPARATORS: [&str; 9] = [
-	"(", ")", "{", "}",
-	"[", "]", "<", ">",
-	";"
-];
-
-pub static SEPARATOR_CHARS: &str = "(){}[]<>;";
+pub static SEPARATORS: &str = "(){}[]<>;";
 
 pub static OPERATORS: [&str; 35] = [
 	"+", "-", "*", "/", "%",

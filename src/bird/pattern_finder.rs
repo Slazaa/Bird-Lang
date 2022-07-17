@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use super::lexer::{Token, TokenType};
 
 pub enum Pattern {
@@ -11,7 +13,7 @@ pub enum Pattern {
 	},
 	FuncDecl {
 		identifier: String,
-		return_type: String,
+		return_type: Option<String>,
 		params: Vec<(String, String)>,
 		public: bool
 	},
@@ -72,9 +74,26 @@ impl PatternFinder {
 			return Pattern::Invalid;
 		}
 
+		for token in tokens {
+			print!("({:?}, '{}') ", token.token_type(), token.symbol());
+
+			io::stdout()
+				.flush()
+				.unwrap();
+		}
+
+		println!();
+
+		match tokens.first().unwrap().token_type() {
+			TokenType::Operator | TokenType::Separator => return Pattern::Ignored,
+			_ => ()
+		}
+
 		let patterns = vec![
 			("VarDecl", pattern_template!((TokenType::Keyword, Some("var")), (TokenType::Identifier, None), (TokenType::Operator, Some(":")), (TokenType::Identifier, None))),
-			("MembDecl", pattern_template!((TokenType::Identifier, None), (TokenType::Operator, Some(":")), (TokenType::Identifier, None)))
+			("MembDecl", pattern_template!((TokenType::Identifier, None), (TokenType::Operator, Some(":")), (TokenType::Identifier, None))),
+			("FuncDecl", pattern_template!((TokenType::Keyword, Some("pub")), (TokenType::Keyword, Some("func")), (TokenType::Identifier, None), (TokenType::Separator, Some("(")), (TokenType::Separator, Some(")")))),
+			("FuncDecl", pattern_template!((TokenType::Keyword, Some("func")), (TokenType::Identifier, None), (TokenType::Separator, Some("(")), (TokenType::Separator, Some(")"))))
 		];
 
 		for (pattern_type, pattern) in patterns {
@@ -106,6 +125,18 @@ impl PatternFinder {
 			"VarDecl" => Pattern::VarDecl {
 				identifier: tokens[1].symbol().to_owned(),
 				var_type: tokens[3].symbol().to_owned()
+			},
+			"FuncDecl" if tokens[0].symbol() == "pub" => Pattern::FuncDecl {
+				identifier: tokens[2].symbol().to_owned(),
+				return_type: None,
+				params: Vec::new(),
+				public: true
+			},
+			"FuncDecl" => Pattern::FuncDecl {
+				identifier: tokens[1].symbol().to_owned(),
+				return_type: None,
+				params: Vec::new(),
+				public: false
 			},
 			_ => Pattern::Invalid
 		}

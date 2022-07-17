@@ -1,6 +1,4 @@
-use std::io::Write;
 use std::fs;
-use std::io;
 
 use crate::bird::feedback::*;
 use crate::bird::lexer::Token;
@@ -27,24 +25,43 @@ impl Translator {
 			result: text
 		};
 
-		let mut res = String::new();
-
 		translator.advance();
 
-		while let Some(token_buffer) = &mut translator.token_buffer {
+		while let Some(token_buffer) = &translator.token_buffer {
 			let mut text_range = None;
 
 			if !token_buffer.is_empty() {
 				text_range = Some(token_buffer.first().unwrap().pos_start().index() as usize..=token_buffer.last().unwrap().pos_end().index() as usize);
 			}
 
-			let token_buffer_clone = translator.token_buffer.as_ref().unwrap().clone();
+			let token_buffer_clone = token_buffer.clone();
 
 			match PatternFinder::find(&token_buffer_clone, PatternContext::Global) {
-				Pattern::VarDecl { identifier, var_type } => translator.result.replace_range(text_range.unwrap(), &format!("{} {}", var_type, identifier)),
-				Pattern::MembDecl { identifier, var_type } => (),
-				Pattern::FuncDecl { identifier, return_type, params, public } => (),
-				Pattern::Ignored => translator.add_to_res(&mut res),
+				Pattern::VarDecl { identifier, var_type } => {
+					translator.result.replace_range(text_range.unwrap(), &format!("{} {}", var_type, identifier));
+					translator.clear_token_buffer();
+				}
+				Pattern::MembDecl { .. } => (),
+				Pattern::FuncDecl { identifier, return_type, params, public } => {
+					let return_type = match return_type {
+						Some(x) => x,
+						None => "void".to_owned()
+					};
+
+					let params = match params.is_empty() {
+						true => "void".to_owned(),
+						false => "".to_owned()
+					};
+
+					if public {
+						translator.result.replace_range(text_range.unwrap(), &format!("{} {}({})", return_type, identifier, params));
+					} else {
+						translator.result.replace_range(text_range.unwrap(), &format!("static {} {}({})", return_type, identifier, params));
+					}
+
+					translator.clear_token_buffer();
+				}
+				Pattern::Ignored => translator.clear_token_buffer(),
 				Pattern::Invalid => ()
 			}
 
@@ -54,12 +71,7 @@ impl Translator {
 		Ok(translator.result)
 	}
 
-	fn add_to_res(&mut self, res: &mut String) {
-		for token in self.token_buffer.as_ref().unwrap() {
-			res.push_str(token.symbol());
-			res.push(' ');
-		}
-
+	fn clear_token_buffer(&mut self) {
 		self.token_buffer.as_mut().unwrap().clear();
 	}
 
