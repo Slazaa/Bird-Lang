@@ -27,18 +27,24 @@ impl Translator {
 
 		translator.advance();
 
+		let mut index_offset = 0;
+
 		while let Some(token_buffer) = &translator.token_buffer {
-			let mut text_range = None;
+			let mut text_range = 0..=0;
 
 			if !token_buffer.is_empty() {
-				text_range = Some(token_buffer.first().unwrap().pos_start().index() as usize..=token_buffer.last().unwrap().pos_end().index() as usize);
+				text_range = (token_buffer.first().unwrap().pos_start().index() + index_offset) as usize..=(token_buffer.last().unwrap().pos_end().index() + index_offset) as usize;
 			}
 
 			let token_buffer_clone = token_buffer.clone();
+			let pattern_found = PatternFinder::find(&token_buffer_clone, PatternContext::Global);
 
-			match PatternFinder::find(&token_buffer_clone, PatternContext::Global) {
+			match pattern_found {
 				Pattern::VarDecl { identifier, var_type } => {
-					translator.result.replace_range(text_range.unwrap(), &format!("{} {}", var_type, identifier));
+					let result = format!("{} {}", var_type, identifier);
+					index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
+
+					translator.result.replace_range(text_range, &result);
 					translator.clear_token_buffer();
 				}
 				Pattern::MembDecl { .. } => (),
@@ -53,12 +59,15 @@ impl Translator {
 						false => "".to_owned()
 					};
 
-					if public {
-						translator.result.replace_range(text_range.unwrap(), &format!("{} {}({})", return_type, identifier, params));
-					} else {
-						translator.result.replace_range(text_range.unwrap(), &format!("static {} {}({})", return_type, identifier, params));
-					}
+					let public_str = match public {
+						true => "".to_owned(),
+						false => "static ".to_owned()
+					};
 
+					let result = format!("{}{} {}({})", public_str, return_type, identifier, params);
+					index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
+
+					translator.result.replace_range(text_range, &result);
 					translator.clear_token_buffer();
 				}
 				Pattern::Ignored => translator.clear_token_buffer(),
