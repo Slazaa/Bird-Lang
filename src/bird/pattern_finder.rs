@@ -1,5 +1,3 @@
-use std::io::{self, Write};
-
 use super::lexer::{Token, TokenType};
 
 pub enum Pattern {
@@ -73,16 +71,6 @@ impl PatternFinder {
 		if tokens.is_empty() {
 			return Pattern::Invalid;
 		}
-
-		for token in tokens {
-			print!("({:?}, '{}') ", token.token_type(), token.symbol());
-
-			io::stdout()
-				.flush()
-				.unwrap();
-		}
-
-		println!();
 
 		match tokens.first().unwrap().token_type() {
 			TokenType::Operator | TokenType::Separator => return Pattern::Ignored,

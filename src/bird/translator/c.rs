@@ -49,10 +49,16 @@ impl Translator {
 				}
 				Pattern::MembDecl { .. } => (),
 				Pattern::FuncDecl { identifier, return_type, params, public } => {
-					let return_type = match return_type {
-						Some(x) => x,
-						None => "void".to_owned()
-					};
+					let return_type_str;
+
+					if identifier == "main" {
+						return_type_str = "int32".to_owned();
+					} else {
+						return_type_str = match return_type {
+							Some(x) => x,
+							None => "void".to_owned()
+						};
+					}
 
 					let params = match params.is_empty() {
 						true => "void".to_owned(),
@@ -64,7 +70,7 @@ impl Translator {
 						false => "static ".to_owned()
 					};
 
-					let result = format!("{}{} {}({})", public_str, return_type, identifier, params);
+					let result = format!("{}{} {}({})", public_str, return_type_str, identifier, params);
 					index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
 
 					translator.result.replace_range(text_range, &result);
