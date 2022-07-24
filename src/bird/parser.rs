@@ -31,9 +31,9 @@ pub struct Parser {
 }
 
 impl Parser {
-	pub fn parse(tokens: Vec<Token>) -> Result<Node, Feedback> {
+	pub fn parse(tokens: &Vec<Token>) -> Result<Node, Feedback> {
 		let mut parser = Self { 
-			tokens,
+			tokens: tokens.to_vec(),
 			token_index: -1,
 			current_token: None,
 			last_token: None

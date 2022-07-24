@@ -33,44 +33,53 @@ impl Feedback {
 		}
 	}
 
+	fn arrow_pos(pos_start: &Position, pos_end: &Position) -> String {
+		let mut result = String::new();
+
+		let line_string = format!("{}", pos_start.line() + 1);
+		result.push_str(format!("\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).as_str());
+
+		let mut pipe: String = (0..=line_string.len()).map(|_| ' ')
+			.collect();
+
+		pipe.push('|');
+
+		let mut pipe_line = String::from(" |");
+		pipe_line.insert_str(0, &line_string);
+
+		let mut pipe_down = pipe.clone();
+		pipe_down.push(' ');
+
+		for _ in 0..pos_start.colomn() {
+			pipe_down.push(' ');
+		}
+
+		for _ in pos_start.colomn()..=pos_end.colomn() {
+			pipe_down.push('^');
+		}
+
+		let file = File::open(pos_start.filname()).unwrap();
+		let reader = BufReader::new(file);
+
+		let line_text = reader.lines()
+			.nth(pos_start.line() as usize)
+			.unwrap()
+			.unwrap();
+
+		result.push_str(&format!("\n{}", pipe));
+		result.push_str(&format!("\n{} {}", pipe_line, line_text));
+		result.push_str(&format!("\n{}", pipe_down));
+
+		result
+	}
+
 	pub fn as_string(&self) -> String {
 		let mut result = String::new();
 
 		result.push_str(format!("{}: {}", self.feedback_type, self.description).as_str());
 
 		if let Some((pos_start, pos_end)) = &self.position {
-			let line_string = format!("{}", pos_start.line() + 1);
-			result.push_str(format!("\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).as_str());
-
-			let mut pipe: String = (0..=line_string.len()).map(|_| ' ')
-				.collect();
-			pipe.push('|');
-
-			let mut pipe_line = String::from(" |");
-			pipe_line.insert_str(0, &line_string);
-
-			let mut pipe_down = pipe.clone();
-			pipe_down.push(' ');
-
-			for _ in 0..pos_start.colomn() {
-				pipe_down.push(' ');
-			}
-
-			for _ in pos_start.colomn()..=pos_end.colomn() {
-				pipe_down.push('^');
-			}
-
-			let file = File::open(pos_start.filname()).unwrap();
-			let reader = BufReader::new(file);
-
-			let line_text = reader.lines()
-				.nth(pos_start.line() as usize)
-				.unwrap()
-				.unwrap();
-
-			result.push_str(&format!("\n{}", pipe));
-			result.push_str(&format!("\n{} {}", pipe_line, line_text));
-			result.push_str(&format!("\n{}", pipe_down));
+			result.push_str(&Self::arrow_pos(pos_start, pos_end));
 		}
 
 		result
@@ -94,5 +103,9 @@ impl Error {
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, None, &format!("No such file or directory '{}'", filename))
+	}
+
+	pub fn unspecified(description: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error, None, description)
 	}
 }

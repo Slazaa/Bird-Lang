@@ -1,5 +1,6 @@
 use std::fs;
 
+use crate::bird::constants::translator::*;
 use crate::bird::feedback::*;
 use crate::bird::lexer::Token;
 use crate::bird::pattern_finder::{PatternFinder, Pattern, PatternContext};
@@ -38,50 +39,37 @@ impl Translator {
 
 			let token_buffer_clone = token_buffer.clone();
 			let pattern_found = PatternFinder::find(&token_buffer_clone, PatternContext::Global);
+			let mut result = None;
 
-			match pattern_found {
-				Pattern::VarDecl { identifier, var_type } => {
-					let result = format!("{} {}", var_type, identifier);
-					index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
-
-					translator.result.replace_range(text_range, &result);
-					translator.clear_token_buffer();
-				}
+			match &pattern_found {
+				Pattern::VarDecl { identifier, var_type } => result = Some(Self::var_decl(&identifier, &var_type)),
 				Pattern::MembDecl { .. } => (),
-				Pattern::FuncDecl { identifier, return_type, params, public } => {
-					let return_type_str;
-
-					if identifier == "main" {
-						return_type_str = "int32".to_owned();
-					} else {
-						return_type_str = match return_type {
-							Some(x) => x,
-							None => "void".to_owned()
-						};
-					}
-
-					let params = match params.is_empty() {
-						true => "void".to_owned(),
-						false => "".to_owned()
-					};
-
-					let public_str = match public {
-						true => "".to_owned(),
-						false => "static ".to_owned()
-					};
-
-					let result = format!("{}{} {}({})", public_str, return_type_str, identifier, params);
-					index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
-
-					translator.result.replace_range(text_range, &result);
-					translator.clear_token_buffer();
-				}
+				Pattern::FuncDecl { identifier, return_type, params, public } => result = Some(Self::func_decl(identifier, return_type.as_deref(), params, *public)),
 				Pattern::Ignored => translator.clear_token_buffer(),
 				Pattern::Invalid => ()
 			}
 
+			if let Some(result) = result {
+				match &pattern_found {
+					Pattern::Ignored | Pattern::Invalid => (),
+					_ => {
+						index_offset += result.len() as i32 - (text_range.end() - text_range.start()) as i32 - 1;
+						translator.result.replace_range(text_range, &result);
+						translator.clear_token_buffer();
+					}
+				}
+			}
+
 			translator.advance();
 		}
+
+		translator.result.push_str(&format!("\n\n\
+int32 main(int32 argc, char** argv)
+{{
+	{FUNCTION_PREFIX}main();
+	return 0;
+}}\
+		"));
 		
 		Ok(translator.result)
 	}
@@ -102,5 +90,28 @@ impl Translator {
 		}
 
 		self.token_buffer = None;
+	}
+
+	fn var_decl(identifier: &str, var_type: &str) -> String {
+		format!("{} {}", var_type, identifier)
+	}
+
+	fn func_decl(identifier: &str, return_type: Option<&str>, params: &Vec<(String, String)>, public: bool) -> String {
+		let return_type_str = match return_type {
+			Some(x) => x,
+			None => "void"
+		};
+
+		let params = match params.is_empty() {
+			true => "void",
+			false => ""
+		};
+
+		let public_str = match public {
+			true => "",
+			false => "static "
+		};
+
+		format!("{}{} {}({})", public_str, return_type_str, FUNCTION_PREFIX.to_owned() + &identifier, params)
 	}
 }

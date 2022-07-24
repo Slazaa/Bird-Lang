@@ -1,4 +1,4 @@
 /target
+/c
 Cargo.lock
 Main.bird
-main.c

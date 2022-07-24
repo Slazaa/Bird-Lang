@@ -6,7 +6,7 @@ pub mod pattern_finder;
 pub mod translator;
 
 use std::io::Write;
-use std::fs::File;
+use std::fs::{File, self};
 
 use self::feedback::*;
 
@@ -16,7 +16,7 @@ pub fn run(filename: &str) -> Result<(), Feedback> {
 		Err(e) => return Err(e)
 	};
 
-	let ast = match parser::Parser::parse(tokens) {
+	let ast = match parser::Parser::parse(&tokens) {
 		Ok(x) => x,
 		Err(e) => return Err(e)
 	};
@@ -27,19 +27,51 @@ pub fn run(filename: &str) -> Result<(), Feedback> {
 }
 
 pub fn to_c(filename: &str) -> Result<(), Feedback> {
+	use translator::c::*;
+
 	let tokens = match lexer::Lexer::parse(filename) {
 		Ok(x) => x,
 		Err(e) => return Err(e)
 	};
 
-	let result = match translator::c::Translator::translate(filename, tokens) {
-		Ok(x) => x,
+	match parser::Parser::parse(&tokens) {
+		Ok(_) => (),
 		Err(e) => return Err(e)
 	};
 
-	let mut file = File::create("main.c").unwrap();
+	match fs::create_dir_all("c/bird") {
+		Ok(_) => (),
+		Err(_) => return Err(Error::unspecified("Failed creating 'c' directory"))
+	}
 
-	write!(&mut file, "{}", result).unwrap();
+	match File::create("c/bird/types.h") {
+		Ok(mut file) => match write!(file, "{}", bird::types()) {
+			Ok(_) => (),
+			Err(_) => return Err(Error::unspecified("Failed writing to file"))
+		}
+		Err(_) => return Err(Error::unspecified("Failed creating 'c/bird/types.h' file"))
+	}
+
+	let mut main_c = match File::create("c/main.c") {
+		Ok(x) => x,
+		Err(_) => return Err(Error::unspecified("Failed creating file"))
+	};
+
+	let mut result = String::new();
+
+	result.push_str("\
+#include \"bird/types.h\"\n\n\
+	");
+
+	match translate::Translator::translate(filename, tokens) {
+		Ok(x) => result.push_str(&x),
+		Err(e) => return Err(e)
+	};
+
+	match write!(&mut main_c, "{}", result) {
+		Ok(_) => (),
+		Err(_) => return Err(Error::unspecified("Failed writing to file"))
+	}
 
 	Ok(())
 }
