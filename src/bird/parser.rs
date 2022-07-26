@@ -5,7 +5,8 @@ use super::constants::*;
 #[derive(Clone, Debug)]
 pub enum NodeItem {
 	Literal(String),
-	Operator(String)
+	Operator(String),
+	Array
 }
 
 #[derive(Debug)]
@@ -31,7 +32,7 @@ pub struct Parser {
 }
 
 impl Parser {
-	pub fn parse(tokens: &Vec<Token>) -> Result<Node, Feedback> {
+	pub fn parse(tokens: &[Token]) -> Result<Node, Feedback> {
 		let mut parser = Self { 
 			tokens: tokens.to_vec(),
 			token_index: -1,
@@ -55,9 +56,47 @@ impl Parser {
 		self.current_token = None;
 	}
 
+	fn statements(&mut self) -> Result<Node, Feedback> {
+		let mut statements = Vec::new();
+		
+		while let Ok(statement) = self.statement() {
+			statements.push(statement);
+		}
+
+		Ok(Node::new(NodeItem::Array, Some(statements)))
+	}
+
+	fn statement(&mut self) -> Result<Node, Feedback> {
+		let current_token = self.current_token.clone()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		
+		if *current_token.token_type() == TokenType::Keyword {
+			match current_token.symbol() {
+				"break" => (),
+				"continue" => (),
+				"return" => (),
+				"var" => (),
+				_ => ()
+			}
+		}
+
+		self.expr()
+	}
+
+	fn expr(&mut self) -> Result<Node, Feedback> {
+		let current_token = self.current_token.clone()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+
+		self.binary_op(Self::cmp_expr, None, vec!["&&", "||"])
+	}
+
+	fn cmp_expr(&mut self) -> Result<Node, Feedback> {
+		todo!();
+	}
+
 	fn factor(&mut self) -> Result<Node, Feedback> {
 		let current_token = self.current_token.clone()
-			.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
 
 		if *current_token.token_type() == TokenType::Literal {
 			self.advance();
@@ -71,14 +110,14 @@ impl Parser {
 			let expr = self.expr()?;
 
 			let current_token = self.current_token.clone()
-				.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
+				.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
 
 			if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
 				self.advance();
 				return Ok(expr);
 			} else {
 				let current_token = self.current_token.clone()
-					.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?;
+					.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
 
 				return Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), "Expected ')'"));
 			}
@@ -98,15 +137,23 @@ impl Parser {
 	}
 
 	fn term(&mut self) -> Result<Node, Feedback> {
-		self.binary_op(Self::factor, "*/%")
+		self.binary_op(Self::factor, None, vec!["*", "/", "%"])
 	}
 
-	fn expr(&mut self) -> Result<Node, Feedback> {
-		self.binary_op(Self::term, "+-")
-	}
+	fn binary_op(
+		&mut self,
+		first_func: fn(&mut Self) -> Result<Node, Feedback>,
+		second_func: Option<fn(&mut Self) -> Result<Node, Feedback>>,
+		ops: Vec<&str>
+	) -> Result<Node, Feedback> {
+		let mut func = first_func;
 
-	fn binary_op(&mut self, func: fn(&mut Self) -> Result<Node, Feedback>, ops: &str) -> Result<Node, Feedback> {
-		let mut left = func(self)?;
+		if let Some(second_func) = second_func {
+			func = second_func;
+		}
+
+		let second_func = func;
+		let mut left = first_func(self)?;
 
 		if let Some(token) = self.current_token.clone() {
 			if *token.token_type() != TokenType::Operator && *token.token_type() != TokenType::Separator {
@@ -114,7 +161,7 @@ impl Parser {
 			}
 			
 			while let Some(token) = self.current_token.clone() {
-				if !ops.contains(token.symbol()) {
+				if !ops.contains(&token.symbol()) {
 					break;
 				}
 
@@ -127,7 +174,7 @@ impl Parser {
 				self.advance();
 
 				let old_left = left;
-				let right = func(self)?;
+				let right = second_func(self)?;
 
 				left = Node::new(token_operator, Some(vec![old_left, right]));
 			}

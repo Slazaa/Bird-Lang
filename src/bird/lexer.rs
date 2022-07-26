@@ -133,13 +133,12 @@ impl Lexer {
 
 		let mut tokens = Vec::new();
 
-		while lexer.current_char.is_some() {
-			let c = lexer.current_char.unwrap();
+		while let Some(c) = lexer.current_char {
 			let str_c = c.to_string();
 
 			if " \n\r\t".contains(&str_c) {
 				lexer.advance();
-			} else if c.is_digit(10) {
+			} else if c.is_ascii_digit() {
 				tokens.push(lexer.make_number());	
 			} else if c.is_alphabetic() || c == '_' {
 				tokens.push(lexer.make_identifier());
@@ -176,7 +175,7 @@ impl Lexer {
 		let mut pos_end = pos_start.clone();
 
 		while let Some(current_char) = self.current_char {
-			if !current_char.is_digit(10) && current_char != '.' {
+			if !current_char.is_ascii_digit() && current_char != '.' {
 				break;
 			}
 

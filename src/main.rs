@@ -5,22 +5,23 @@ use crate::bird::feedback::*;
 mod bird;
 
 fn main() {
-	let args: Vec<String> = env::args().collect();
+	let args: Vec<String> = env::args().skip(1)
+		.collect();
 
 	match args.len() {
-		1 => {
+		0 => {
 			println!("{}", Error::invalid_syntax(None, "Expecting a mode").as_string());
 			return;
 		}
-		2 => {
+		1 => {
 			println!("{}", Error::no_input_file().as_string());
 			return;
 		}
 		_ => ()
 	}
 
-	let mode = &args[1];
-	let filename = &args[2];
+	let mode = &args[0];
+	let filename = &args[1];
 
 	let result = match mode.as_str() {
 		"run" => bird::run(filename),

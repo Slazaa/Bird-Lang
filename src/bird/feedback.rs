@@ -1,4 +1,4 @@
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Write};
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
@@ -37,7 +37,7 @@ impl Feedback {
 		let mut result = String::new();
 
 		let line_string = format!("{}", pos_start.line() + 1);
-		result.push_str(format!("\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).as_str());
+		write!(result, "\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).unwrap();
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ')
 			.collect();
@@ -66,9 +66,9 @@ impl Feedback {
 			.unwrap()
 			.unwrap();
 
-		result.push_str(&format!("\n{}", pipe));
-		result.push_str(&format!("\n{} {}", pipe_line, line_text));
-		result.push_str(&format!("\n{}", pipe_down));
+		write!(result, "\n{}", pipe).unwrap();
+		write!(result, "\n{} {}", pipe_line, line_text).unwrap();
+		write!(result, "\n{}", pipe_down).unwrap();
 
 		result
 	}
@@ -89,6 +89,15 @@ impl Feedback {
 pub struct Error;
 
 impl Error {
+	pub fn expected(position: (&Position, &Position), expected: &str, found: Option<&str>) -> Feedback {
+		let description = match found {
+			Some(found) => format!("Expected {}, found {}", expected, found),
+			None => format!("Expected {}", expected)
+		};
+
+		Feedback::new(FeedbackType::Error, Some(position), &description)
+	}
+	
 	pub fn illegal_char(position: (&Position, &Position), character: char) -> Feedback {
 		Feedback::new(FeedbackType::Error, Some(position), &format!("Illegal character '{}'", character))
 	}
