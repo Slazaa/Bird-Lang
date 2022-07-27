@@ -99,6 +99,10 @@ impl Token {
 	pub fn pos_end(&self) -> &Position {
 		&self.pos_end
 	}
+
+	pub fn pos(&self) -> (&Position, &Position) {
+		(&self.pos_start, &self.pos_end)
+	}
 }
 
 pub struct Lexer {

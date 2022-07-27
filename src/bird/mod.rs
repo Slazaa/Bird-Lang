@@ -7,9 +7,7 @@ use self::feedback::*;
 
 pub fn run(filename: &str) -> Result<(), Feedback> {
 	let tokens = lexer::Lexer::parse(filename)?;
-	let ast = parser::Parser::parse(&tokens)?;
-
-	println!("{:#?}", ast);
+	let _ast = parser::Parser::parse(&tokens)?;
 
 	Ok(())
 }
