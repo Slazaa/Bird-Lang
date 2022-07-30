@@ -13,11 +13,18 @@ pub enum NodeItem {
 	FuncDecl {
 		identifier: String,
 		params: Vec<(String, String)>,
-		return_type: Option<String>
+		return_type: Option<String>,
+		public: bool
 	},
 	MembDecl {
 		identifier: String,
 		param_type: String
+	},
+	VarDecl {
+		identifier: String,
+		var_type: String,
+		public: bool,
+		global: bool
 	}
 }
 
@@ -35,6 +42,14 @@ impl Node {
 		}
 	}
 
+	pub fn entry(&self) -> &NodeItem {
+		&self.entry
+	}
+
+	pub fn children(&self) -> &Vec<Node> {
+		&self.children
+	}
+
 	pub fn children_mut(&mut self) -> &mut Vec<Node> {
 		&mut self.children
 	}
@@ -45,7 +60,8 @@ pub struct Parser {
 	token_index: i32,
 	current_token: Option<Token>,
 	last_token: Option<Token>,
-	parent_node_item: NodeItem
+	parent_node_item: NodeItem,
+	next_pub: Option<Token>
 }
 
 impl Parser {
@@ -55,7 +71,8 @@ impl Parser {
 			token_index: -1,
 			current_token: None,
 			last_token: None,
-			parent_node_item: NodeItem::Unknown
+			parent_node_item: NodeItem::Unknown,
+			next_pub: None
 		};
 
 		parser.advance();
@@ -64,6 +81,7 @@ impl Parser {
 
 	fn advance(&mut self) -> Option<Token> {
 		self.token_index += 1;
+		self.last_token = self.current_token.clone();
 
 		if self.token_index < self.tokens.len() as i32 {
 			self.current_token = Some(self.tokens[self.token_index as usize].clone());
@@ -73,7 +91,6 @@ impl Parser {
 			}
 		}
 
-		self.last_token = self.current_token.clone();
 		self.current_token = None;
 
 		None
@@ -84,17 +101,34 @@ impl Parser {
 		self.parent_node_item = statements.entry.clone();
 
 		loop {
-			let statement = match self.statement() { 
-				Ok(statement) => {
-					match &statement.entry {
-						NodeItem::Unknown => break,
-						_ => statement
-					}
+			let current_token = match self.current_token.clone() {
+				Some(x) => x,
+				None => break
+			};
+
+			if let NodeItem::Array(name) = &self.parent_node_item {
+				if name != "Program" && current_token.symbol() == "}" {
+					break;
 				}
+			}
+
+			if current_token.symbol() == "pub" {
+				self.next_pub = Some(current_token.clone());
+				self.advance();
+				continue;
+			}
+
+			let statement = match self.statement() { 
+				Ok(x) => x,
 				Err(e) => return Err(e)
 			};
 
-			statements.children_mut().push(statement);
+			if let Some(next_pub) = &self.next_pub {
+				return Err(Error::expected(next_pub.pos(), "item", None));
+			}
+
+			statements.children_mut()
+				.push(statement);
 		}
 
 		Ok(statements)
@@ -103,26 +137,27 @@ impl Parser {
 	fn statement(&mut self) -> Result<Node, Feedback> {
 		let current_token = match self.current_token.clone() {
 			Some(x) => x,
-			None => return Ok(Node::new(NodeItem::Unknown, vec![]))
+			None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
 		};
+
+		if let Some(next_pub) = &self.next_pub {
+			match current_token.symbol() {
+				"func" | "struct" => (),
+				_ => return Err(Error::expected(next_pub.pos(), "item", Some(&format!("{}", current_token.symbol()))))
+			}
+		}
+
+		let mut to_call: Option<fn(&mut Self) -> Result<Node, Feedback>> = None;
 		
 		match *current_token.token_type() {
 			TokenType::Keyword => {
 				match current_token.symbol() {
+					"break" => (),
 					"const" => (),
+					"continue" => (),
+					"return" => (),
+					"var" => to_call = Some(Self::var_decl),
 					_ => ()
-				}
-
-				if let NodeItem::Array(name) = &self.parent_node_item {
-					if name != "Program" {
-						match current_token.symbol() {
-							"break" => (),
-							"continue" => (),
-							"return" => (),
-							"var" => (),
-							_ => ()
-						}
-					}
 				}
 			}
 			TokenType::Identifier => {
@@ -131,40 +166,85 @@ impl Parser {
 			_ => ()
 		}
 
+		if let Some(to_call) = to_call {
+			if let NodeItem::Array(name) = &self.parent_node_item {
+				let mut call_it = true;
+
+				if name == "Program" {
+					match current_token.symbol() {
+						"break" | "continue" | "return" => call_it = false,
+						_ => ()
+					}
+				}
+
+				if call_it {
+					return to_call(self);
+				}
+
+				return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
+			}
+		}
+
 		self.control_flow_statement()
 	}
 
 	fn control_flow_statement(&mut self) -> Result<Node, Feedback> {
 		let current_token = match self.current_token.clone() {
 			Some(x) => x,
-			None => return Ok(Node::new(NodeItem::Unknown, vec![]))
+			None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
 		};
+
+		let mut to_call = None;
 
 		match *current_token.token_type() {
 			TokenType::Keyword => {
 				match current_token.symbol() {
-					"func" => return self.func_decl(),
+					"else" => todo!(),
+					"func" => to_call = Some(Self::func_decl),
+					"if" => todo!(),
+					"loop" => todo!(),
 					_ => ()
-				}
-
-				if let NodeItem::Array(name) = &self.parent_node_item {
-					if name != "Program" {
-						match current_token.symbol() {
-							"if" => (),
-							"else" => (),
-							"loop" => (),
-							_ => ()
-						}
-					}
 				}
 			}
 			_ => ()
 		}
 
-		return self.expr()
+		if let Some(to_call) = to_call {
+			if let NodeItem::Array(name) = &self.parent_node_item {
+				let mut call_it = true;
+
+				if name != "Program" {
+					match current_token.symbol() {
+						"func" => call_it = false,
+						_ => ()
+					}
+				} else {
+					match current_token.symbol() {
+						"else" | "if" | "loop" => call_it = false,
+						_ => ()
+					}
+				}
+
+				if call_it {
+					return to_call(self);
+				}
+
+				return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
+			}
+		}
+
+		Err(Error::expected(current_token.pos(), "statement", Some(&format!("'{}'", current_token.symbol()))))
 	}
 
 	fn func_decl(&mut self) -> Result<Node, Feedback> {
+		let public = match &self.next_pub {
+			Some(_) => {
+				self.next_pub = None;
+				true
+			},
+			_ => false
+		};
+
 		let mut current_token = self.advance()
 			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
 
@@ -231,7 +311,7 @@ impl Parser {
 
 		current_token = match self.current_token.clone() {
 			Some(x) => x,
-			None => return Ok(Node::new(NodeItem::Unknown, vec![]))
+			None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
 		};
 
 		match current_token.token_type() {
@@ -239,7 +319,7 @@ impl Parser {
 			_ => return Err(Error::expected(current_token.pos(), "'{'", Some(&format!("'{}'", current_token.symbol()))))
 		}
 
-		let mut func_decl = Node::new(NodeItem::FuncDecl { identifier, params, return_type }, vec![]);
+		let mut func_decl = Node::new(NodeItem::FuncDecl { identifier, params, return_type, public }, vec![]);
 
 		current_token = self.advance()
 			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
@@ -247,16 +327,22 @@ impl Parser {
 		match current_token.token_type() {
 			TokenType::Separator if current_token.symbol() == "}" => (),
 			_ => {
+				let parent_node_item = self.parent_node_item.clone();
+
 				let func_body = match self.statements("Body") {
 					Ok(x) => x,
 					Err(e) => return Err(e)
 				};
+
+				self.parent_node_item = parent_node_item;
 		
 				func_decl.children_mut()
 					.push(func_body);
 		
-				current_token = self.advance()
-					.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+					current_token = match self.current_token.clone() {
+						Some(x) => x,
+						None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
+					};
 		
 				match current_token.token_type() {
 					TokenType::Separator if current_token.symbol() == "}" => (),
@@ -268,6 +354,71 @@ impl Parser {
 		self.advance();
 
 		Ok(func_decl)
+	}
+
+	fn var_decl(&mut self) -> Result<Node, Feedback> {
+		let mut public = false;
+		let mut global = false;
+
+		if let NodeItem::Array(name) = &self.parent_node_item {
+			if name == "Program" {
+				match &self.next_pub {
+					Some(_) => {
+						self.next_pub = None;
+						public = true;
+					},
+					_ => ()
+				}
+
+				global = true;
+			}
+		}
+
+		let mut current_token = self.advance()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+
+		let identifier = match current_token.token_type() {
+			TokenType::Identifier => current_token.symbol().to_owned(),
+			_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
+		};
+
+		current_token = self.advance()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+
+		match current_token.token_type() {
+			TokenType::Operator if current_token.symbol() == ":" => (),
+			_ => return Err(Error::expected(current_token.pos(), "':'", Some(&format!("'{}'", current_token.symbol()))))
+		};
+
+		current_token = self.advance()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+
+		let var_type = match current_token.token_type() {
+			TokenType::Identifier => current_token.symbol().to_owned(),
+			_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
+		};
+
+		let mut var_decl = Node::new(NodeItem::VarDecl { identifier, var_type, public, global }, vec![]);
+
+		current_token = self.advance()
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+
+		match current_token.token_type() {
+			TokenType::Operator if current_token.symbol() == "=" => {
+				self.advance();
+
+				let expr = match self.expr() {
+					Ok(x) => x,
+					Err(e) => return Err(e)
+				};
+
+				var_decl.children_mut()
+					.push(expr);
+			}
+			_ => ()
+		}
+
+		Ok(var_decl)
 	}
 
 	fn memb_decl(&mut self) -> Result<Node, Feedback> {
@@ -297,8 +448,16 @@ impl Parser {
 
 		Ok(Node::new(NodeItem::MembDecl { identifier, param_type }, vec![]))
 	}
-	
+
 	fn expr(&mut self) -> Result<Node, Feedback> {
+		self.binary_op(Self::comp_expr, None, vec!["&&", "||"])
+	}
+
+	fn comp_expr(&mut self) -> Result<Node, Feedback> {
+		self.binary_op(Self::arith_expr, None, vec!["==", "!=", ">", "<", ">=", "<="])
+	}
+
+	fn arith_expr(&mut self) -> Result<Node, Feedback> {
 		self.binary_op(Self::term, None, vec!["+", "-"])
 	}
 

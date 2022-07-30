@@ -48,16 +48,6 @@ impl Feedback {
 		pipe_line.insert_str(0, &line_string);
 
 		let mut pipe_down = pipe.clone();
-		pipe_down.push(' ');
-
-		for _ in 0..pos_start.colomn() {
-			pipe_down.push(' ');
-		}
-
-		for _ in pos_start.colomn()..=pos_end.colomn() {
-			pipe_down.push('^');
-		}
-
 		let file = File::open(pos_start.filname()).unwrap();
 		let reader = BufReader::new(file);
 
@@ -65,6 +55,17 @@ impl Feedback {
 			.nth(pos_start.line() as usize)
 			.unwrap()
 			.unwrap();
+
+		for i in 0..pos_start.colomn() {
+			match line_text.chars().nth(i as usize).unwrap() {
+				'\t' => pipe_down.push_str("\t"),
+				_ => pipe_down.push(' ')
+			}
+		}
+
+		for _ in pos_start.colomn()..=pos_end.colomn() {
+			pipe_down.push('^');
+		}
 
 		write!(result, "\n{}", pipe).unwrap();
 		write!(result, "\n{} {}", pipe_line, line_text).unwrap();
@@ -90,8 +91,22 @@ pub struct Error;
 
 impl Error {
 	pub fn expected(position: (&Position, &Position), expected: &str, found: Option<&str>) -> Feedback {
+		let mut expected = expected;
+
+		if expected.contains("\n") {
+			expected = "new line";
+		}
+
 		let description = match found {
-			Some(found) => format!("Expected {}, found {}", expected, found),
+			Some(found) => {
+				let mut found = found;
+
+				if found.contains("\n") {
+					found = "new line";
+				}
+
+				format!("Expected {}, found {}", expected, found)
+			}
 			None => format!("Expected {}", expected)
 		};
 
@@ -112,6 +127,10 @@ impl Error {
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, None, &format!("No such file or directory '{}'", filename))
+	}
+
+	pub fn unexpected(position: (&Position, &Position), unexpected: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error, Some(position), &format!("Unexpected {}", unexpected))
 	}
 
 	pub fn unspecified(description: &str) -> Feedback {
