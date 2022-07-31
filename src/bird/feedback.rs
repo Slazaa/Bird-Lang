@@ -57,8 +57,8 @@ impl Feedback {
 			.unwrap();
 
 		for i in 0..pos_start.colomn() {
-			match line_text.chars().nth(i as usize).unwrap() {
-				'\t' => pipe_down.push_str("\t"),
+			match line_text.chars().nth(i as usize) {
+				Some(c) if c == '\t' => pipe_down.push('\t'),
 				_ => pipe_down.push(' ')
 			}
 		}
@@ -93,7 +93,7 @@ impl Error {
 	pub fn expected(position: (&Position, &Position), expected: &str, found: Option<&str>) -> Feedback {
 		let mut expected = expected;
 
-		if expected.contains("\n") {
+		if expected.contains('\n') {
 			expected = "new line";
 		}
 
@@ -101,7 +101,7 @@ impl Error {
 			Some(found) => {
 				let mut found = found;
 
-				if found.contains("\n") {
+				if found.contains('\n') {
 					found = "new line";
 				}
 
@@ -112,11 +112,11 @@ impl Error {
 
 		Feedback::new(FeedbackType::Error, Some(position), &description)
 	}
-	
+/*
 	pub fn illegal_char(position: (&Position, &Position), character: char) -> Feedback {
 		Feedback::new(FeedbackType::Error, Some(position), &format!("Illegal character '{}'", character))
 	}
-
+*/
 	pub fn invalid_syntax(position: Option<(&Position, &Position)>, description: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, position, description)
 	}

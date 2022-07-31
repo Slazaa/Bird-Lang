@@ -140,7 +140,11 @@ impl Lexer {
 		while let Some(c) = lexer.current_char {
 			let str_c = c.to_string();
 
-			if " \n\r\t".contains(&str_c) {
+			if " \r\t".contains(&str_c) {
+				lexer.advance();
+			} else if "\n".contains(&str_c) {
+				let pos = lexer.pos.clone();
+				tokens.push(Token::new(TokenType::Separator, "\n", &pos, Some(&pos)));
 				lexer.advance();
 			} else if "#".contains(&str_c) {
 				lexer.skip_comment();
@@ -170,7 +174,7 @@ impl Lexer {
 		if self.pos.index() < self.text.len() as i32 {
 			self.current_char = Some(self.text.chars().nth(self.pos.index() as usize).unwrap());
 			
-			if let Some(current_char) = self.current_char.clone() {
+			if let Some(current_char) = self.current_char {
 				return Some(current_char);
 			}
 		}
@@ -313,6 +317,6 @@ impl Lexer {
 
 		self.advance();
 
-		return Ok(Token::new(TokenType::Separator, &String::from(current_char), &pos_start, Some(&pos_start)));
+		Ok(Token::new(TokenType::Separator, &String::from(current_char), &pos_start, Some(&pos_start)))
 	}
 }

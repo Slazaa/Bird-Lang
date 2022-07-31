@@ -1,7 +1,8 @@
 use std::fs::OpenOptions;
 use std::fs::{self, File};
 use std::path::Path;
-use std::io::Write;
+use std::io::Write as _;
+use std::fmt::Write as _;
 
 use crate::bird::constants::compile;
 use crate::bird::parser::*;
@@ -46,7 +47,8 @@ typedef unsigned long long uint64;
 	Ok(())
 }
 pub struct Compiler {
-	main_file: File
+	main_file: File,
+	func_protos: Vec<String>
 }
 
 impl Compiler {
@@ -70,15 +72,22 @@ impl Compiler {
 		}
 
 		let mut compiler = Self {
-			main_file
+			main_file,
+			func_protos: Vec::new()
 		};
 
-		if write!(compiler.main_file, "#include \"bird/types.h\"\n").is_err() {
+		if writeln!(compiler.main_file, "#include \"bird/types.h\"").is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
 		match compiler.translate_ast(&ast) {
 			Ok(res) => {
+				for proto in compiler.func_protos {
+					if write!(compiler.main_file, "{}", proto).is_err() {
+						return Err(Error::unspecified("Failed writing to 'main.c' file"));
+					}
+				}
+
 				if write!(compiler.main_file, "{}", res).is_err() {
 					return Err(Error::unspecified("Failed writing to 'main.c' file"));
 				}
@@ -86,7 +95,7 @@ impl Compiler {
 			Err(e) => return Err(e)
 		}
 
-		if write!(compiler.main_file, "int32 main(int argc, char **argv){{{}main();return 0;}}", compile::FUNC_PREFIX).is_err() {
+		if write!(compiler.main_file, "int main(int argc, char **argv){{{}main();return 0;}}", compile::FUNC_PREFIX).is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
@@ -95,9 +104,9 @@ impl Compiler {
 
 	fn translate_ast(&mut self, node: &Node) -> Result<String, Feedback> {
 		match node.entry() {
-			NodeItem::Array(_) => return self.array(node),
-			NodeItem::FuncDecl { identifier, params, return_type, public } => return self.func_decl(identifier, params, return_type, *public, node),
-			NodeItem::VarDecl { identifier, var_type, public, global } => return self.var_decl(identifier, var_type, *public, *global, node),
+			NodeItem::Array(_) => self.array(node),
+			NodeItem::FuncDecl { identifier, params, return_type, public } => self.func_decl(identifier, params, return_type, *public, node),
+			NodeItem::VarDecl { identifier, var_type, public, global } => self.var_decl(identifier, var_type, *public, *global, node),
 			_ => Err(Error::unspecified("Invalid node"))
 		}
 	}
@@ -116,20 +125,16 @@ impl Compiler {
 	fn func_decl(&mut self, identifier: &str, params: &Vec<(String, String)>, return_type: &Option<String>, public: bool, node: &Node) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		if !public {
-			res.push_str("static ");
-		}
-
 		match return_type {
-			Some(return_type) => res.push_str(&format!("{} ", return_type)),
+			Some(return_type) => write!(&mut res, "{} ", return_type).unwrap(),
 			None => res.push_str("void ")
 		}
 
-		res.push_str(&format!("{}{}(", compile::FUNC_PREFIX, identifier));
+		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, identifier).unwrap();
 
 		if !params.is_empty() {
 			for (param_id, param_type) in params {
-				res.push_str(&format!("{} {}, ", param_type, param_id));
+				write!(&mut res, "{} {}, ", param_type, param_id).unwrap();
 			}
 
 			res.truncate(res.len() - 2);
@@ -137,21 +142,32 @@ impl Compiler {
 			res.push_str("void");
 		}
 
-		res.push_str("){");
+		res.push(')');
 		
 		if let Some(body) = node.children()
 			.iter()
-			.find(|node| match node.entry() {
-				NodeItem::Array(name) if name == "Body" => true,
-				_ => false
-			})
+			.find(|node| matches!(node.entry(), NodeItem::Array(name) if name == "Body"))
 		{
+			let mut node_signature = Node::new(node.entry().clone(), vec![]);
+			node_signature.children_mut().clear();
+
+			let node_signature_string = self.translate_ast(&node_signature)?;
+			self.func_protos.push(node_signature_string);
+
+			res.push('{');
+
 			for node in body.children() {
 				res.push_str(&self.translate_ast(node)?);
 			}
-		}
 
-		res.push_str("}");
+			res.push('}');
+		} else {
+			if !public {
+				res = "static ".to_owned() + &res;
+			}
+
+			res.push(';');
+		}
 
 		Ok(res)
 	}
@@ -162,18 +178,22 @@ impl Compiler {
 		if global && !public {
 			res.push_str("static ");
 		}
-
-		res.push_str(&format!("{} ", var_type));
+		
+		write!(res, "{} ", var_type).unwrap();
 
 		match node.children().is_empty() {
-			true => res.push_str(&format!("{};", identifier)),
+			true => {
+				if write!(&mut res, "{};", identifier).is_err() {
+					return Err(Error::unspecified("Failed to write on result"));
+				}
+			}
 			false => {
 				let expr = match self.expr(&node.children()[0]) {
 					Ok(x) => x,
 					Err(e) => return Err(e)
 				};
 
-				res.push_str(&format!("{}={};", identifier, expr));
+				write!(&mut res, "{}={};", identifier, expr).unwrap();
 			}
 		}
 
@@ -182,8 +202,8 @@ impl Compiler {
 
 	fn expr(&mut self, node: &Node) -> Result<String, Feedback> {
 		match node.entry() {
-			NodeItem::Operator(operator) => return self.operator(operator, node),
-			NodeItem::Literal(value) => return Ok(value.clone()),
+			NodeItem::Operator(operator) => self.operator(operator, node),
+			NodeItem::Literal(value) => Ok(value.clone()),
 			_ => todo!()
 		}
 	}
@@ -191,45 +211,40 @@ impl Compiler {
 	fn operator(&mut self, operator: &str, node: &Node) -> Result<String, Feedback> {
 		let mut res = String::new();
 
+		let mut get_val = |index: usize| {
+			match node.children()[index].entry() {
+				NodeItem::Literal(value) => Ok(value.clone()),
+				NodeItem::Operator(operator) => {
+					match self.operator(operator, &node.children()[0]) {
+						Ok(x) => Ok(x),
+						Err(e) => Err(e)
+					}
+				}
+				_ => Err(Error::unspecified("Invalid node"))
+			}
+		};
+
 		match node.children().len() {
 			1 => {
-				let first = match node.children()[0].entry() {
-					NodeItem::Literal(value) => value.clone(),
-					NodeItem::Operator(operator) => {
-						match self.operator(operator, &node.children()[0]) {
-							Ok(x) => x,
-							Err(e) => return Err(e)
-						}
-					}
-					_ => return Err(Error::unspecified("Invalid node"))
+				let first = match get_val(0) {
+					Ok(x) => x,
+					Err(e) => return Err(e)
 				};
 
-				res.push_str(&format!("{}{}", operator, first));
+				write!(&mut res, "{}{}", operator, first).unwrap();
 			}
 			2 => {
-				let first = match node.children()[0].entry() {
-					NodeItem::Literal(value) => value.clone(),
-					NodeItem::Operator(operator) => {
-						match self.operator(operator, &node.children()[0]) {
-							Ok(x) => x,
-							Err(e) => return Err(e)
-						}
-					}
-					_ => return Err(Error::unspecified("Invalid node"))
+				let first = match get_val(0) {
+					Ok(x) => x,
+					Err(e) => return Err(e)
 				};
 
-				let second = match node.children()[1].entry() {
-					NodeItem::Literal(value) => value.clone(),
-					NodeItem::Operator(operator) => {
-						match self.operator(operator, &node.children()[1]) {
-							Ok(x) => x,
-							Err(e) => return Err(e)
-						}
-					}
-					_ => return Err(Error::unspecified("Invalid node"))
+				let second = match get_val(1) {
+					Ok(x) => x,
+					Err(e) => return Err(e)
 				};
 
-				res.push_str(&format!("{}{}{}", first, operator, second));
+				write!(&mut res, "{}{}{}", first, operator, second).unwrap();
 			}
 			_ => return Err(Error::unspecified("Invalid node"))
 		}

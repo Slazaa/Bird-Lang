@@ -100,12 +100,7 @@ impl Parser {
 		let mut statements = Node::new(NodeItem::Array(name.to_owned()), vec![]);
 		self.parent_node_item = statements.entry.clone();
 
-		loop {
-			let current_token = match self.current_token.clone() {
-				Some(x) => x,
-				None => break
-			};
-
+		while let Some(current_token) = self.current_token.clone() {
 			if let NodeItem::Array(name) = &self.parent_node_item {
 				if name != "Program" && current_token.symbol() == "}" {
 					break;
@@ -143,11 +138,11 @@ impl Parser {
 		if let Some(next_pub) = &self.next_pub {
 			match current_token.symbol() {
 				"func" | "struct" => (),
-				_ => return Err(Error::expected(next_pub.pos(), "item", Some(&format!("{}", current_token.symbol()))))
+				_ => return Err(Error::expected(next_pub.pos(), "item", Some(current_token.symbol())))
 			}
 		}
 
-		let mut to_call: Option<fn(&mut Self) -> Result<Node, Feedback>> = None;
+		let mut to_call: Option<NodeFunc> = None;
 		
 		match *current_token.token_type() {
 			TokenType::Keyword => {
@@ -194,19 +189,16 @@ impl Parser {
 			None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
 		};
 
-		let mut to_call = None;
+		let mut to_call: Option<NodeFunc> = None;
 
-		match *current_token.token_type() {
-			TokenType::Keyword => {
-				match current_token.symbol() {
-					"else" => todo!(),
-					"func" => to_call = Some(Self::func_decl),
-					"if" => todo!(),
-					"loop" => todo!(),
-					_ => ()
-				}
+		if *current_token.token_type() == TokenType::Keyword {
+			match current_token.symbol() {
+				"else" => todo!(),
+				"func" => to_call = Some(Self::func_decl),
+				"if" => todo!(),
+				"loop" => todo!(),
+				_ => ()
 			}
-			_ => ()
 		}
 
 		if let Some(to_call) = to_call {
@@ -214,9 +206,8 @@ impl Parser {
 				let mut call_it = true;
 
 				if name != "Program" {
-					match current_token.symbol() {
-						"func" => call_it = false,
-						_ => ()
+					if current_token.symbol() == "func" {
+						call_it = false;
 					}
 				} else {
 					match current_token.symbol() {
@@ -314,21 +305,13 @@ impl Parser {
 			None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
 		};
 
-		match current_token.token_type() {
-			TokenType::Separator if current_token.symbol() == "{" => (),
-			_ => return Err(Error::expected(current_token.pos(), "'{'", Some(&format!("'{}'", current_token.symbol()))))
-		}
-
 		let mut func_decl = Node::new(NodeItem::FuncDecl { identifier, params, return_type, public }, vec![]);
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
-
 		match current_token.token_type() {
-			TokenType::Separator if current_token.symbol() == "}" => (),
-			_ => {
-				let parent_node_item = self.parent_node_item.clone();
+			TokenType::Separator if current_token.symbol() == "{" => {
+				self.advance();
 
+				let parent_node_item = self.parent_node_item.clone();
 				let func_body = match self.statements("Body") {
 					Ok(x) => x,
 					Err(e) => return Err(e)
@@ -339,16 +322,17 @@ impl Parser {
 				func_decl.children_mut()
 					.push(func_body);
 		
-					current_token = match self.current_token.clone() {
-						Some(x) => x,
-						None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
-					};
+				current_token = match self.current_token.clone() {
+					Some(x) => x,
+					None => return Err(Error::expected(self.last_token.as_ref().unwrap().pos(), "token", None))
+				};
 		
 				match current_token.token_type() {
 					TokenType::Separator if current_token.symbol() == "}" => (),
 					_ => return Err(Error::expected(current_token.pos(), "'}'", Some(&format!("'{}'", current_token.symbol()))))
 				}
 			}
+			_ => return Ok(func_decl)
 		}
 
 		self.advance();
@@ -362,12 +346,9 @@ impl Parser {
 
 		if let NodeItem::Array(name) = &self.parent_node_item {
 			if name == "Program" {
-				match &self.next_pub {
-					Some(_) => {
-						self.next_pub = None;
+				if self.next_pub.is_some() {
+					self.next_pub = None;
 						public = true;
-					},
-					_ => ()
 				}
 
 				global = true;
