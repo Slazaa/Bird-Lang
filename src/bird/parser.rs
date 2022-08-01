@@ -96,21 +96,39 @@ impl Parser {
 		None
 	}
 
+	fn skip_new_lines(&mut self) {
+		while let Some(current_token) = self.current_token.clone() {
+			match current_token.token_type() {
+				TokenType::Separator if current_token.symbol() == "\n" => self.advance(),
+				_ => break
+			};
+		}
+	}
+
 	fn statements(&mut self, name: &str) -> Result<Node, Feedback> {
 		let mut statements = Node::new(NodeItem::Array(name.to_owned()), vec![]);
 		self.parent_node_item = statements.entry.clone();
 
-		while let Some(current_token) = self.current_token.clone() {
-			if let NodeItem::Array(name) = &self.parent_node_item {
-				if name != "Program" && current_token.symbol() == "}" {
-					break;
-				}
+		loop {
+			self.skip_new_lines();
+
+			let current_token = match self.current_token.clone() {
+				Some(x) => x,
+				None => break
+			};
+
+			match &self.parent_node_item {
+				NodeItem::Array(name) if name != "Program" && current_token.symbol() == "}" => break,
+				_ => ()
 			}
 
-			if current_token.symbol() == "pub" {
-				self.next_pub = Some(current_token.clone());
-				self.advance();
-				continue;
+			match current_token.token_type() {
+				TokenType::Keyword if current_token.symbol() == "pub" => {
+					self.next_pub = Some(current_token.clone());
+					self.advance();
+					continue;
+				}
+				_ => ()
 			}
 
 			let statement = match self.statement() { 
@@ -147,10 +165,10 @@ impl Parser {
 		match *current_token.token_type() {
 			TokenType::Keyword => {
 				match current_token.symbol() {
-					"break" => (),
-					"const" => (),
-					"continue" => (),
-					"return" => (),
+					"break" => todo!(),
+					"const" => todo!(),
+					"continue" => todo!(),
+					"return" => todo!(),
 					"var" => to_call = Some(Self::var_decl),
 					_ => ()
 				}
@@ -162,21 +180,14 @@ impl Parser {
 		}
 
 		if let Some(to_call) = to_call {
-			if let NodeItem::Array(name) = &self.parent_node_item {
-				let mut call_it = true;
-
-				if name == "Program" {
+			match &self.parent_node_item {
+				NodeItem::Array(name) if name == "Program" => {
 					match current_token.symbol() {
-						"break" | "continue" | "return" => call_it = false,
-						_ => ()
+						"break" | "continue" | "return" => return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol()))),
+						_ => return to_call(self)
 					}
 				}
-
-				if call_it {
-					return to_call(self);
-				}
-
-				return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
+				_ => ()
 			}
 		}
 
@@ -203,21 +214,15 @@ impl Parser {
 
 		if let Some(to_call) = to_call {
 			if let NodeItem::Array(name) = &self.parent_node_item {
-				let mut call_it = true;
-
-				if name != "Program" {
-					if current_token.symbol() == "func" {
-						call_it = false;
+				if name == "Program" {
+					match current_token.symbol() {
+						"else" | "if" | "loop" => (),
+						_ => return to_call(self)
 					}
 				} else {
-					match current_token.symbol() {
-						"else" | "if" | "loop" => call_it = false,
-						_ => ()
+					if current_token.symbol() != "func" {
+						return to_call(self);
 					}
-				}
-
-				if call_it {
-					return to_call(self);
 				}
 
 				return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
@@ -233,34 +238,48 @@ impl Parser {
 				self.next_pub = None;
 				true
 			},
-			_ => false
+			None => false
 		};
 
-		let mut current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		let mut current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let identifier = match current_token.token_type() {
 			TokenType::Identifier => current_token.symbol().to_owned(),
 			_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 		};
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		self.advance();
+		self.skip_new_lines();
+
+		current_token = match self.current_token.clone() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		match current_token.token_type() {
 			TokenType::Separator if current_token.symbol() == "(" => (),
 			_ => return Err(Error::expected(current_token.pos(), "'('", Some(&format!("'{}'", current_token.symbol()))))
 		}
 
+		self.advance();
+		self.skip_new_lines();
+
 		let mut params = Vec::new();
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.current_token.clone() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		match current_token.token_type() {
 			TokenType::Separator if current_token.symbol() == ")" => (),
 			_ => {
 				loop {
+					self.skip_new_lines();
+
 					let param_entry = match self.memb_decl() {
 						Ok(param) => param.entry,
 						Err(e) => return Err(e) 
@@ -270,8 +289,13 @@ impl Parser {
 						params.push((identifier, param_type));
 					}
 		
-					current_token = self.advance()
-						.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?;
+					self.advance();
+					self.skip_new_lines();
+
+					current_token = match self.current_token.clone() {
+						Some(x) => x,
+						None => return Err(Error::expected(current_token.pos(), "',' or ')'", None))
+					};
 		
 					match current_token.symbol() {
 						"," => self.advance(),
@@ -282,13 +306,17 @@ impl Parser {
 			}
 		}
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let return_type = match current_token.token_type() {
 			TokenType::Operator if current_token.symbol() == "->" => {
-				current_token = self.advance()
-					.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+				current_token = match self.advance() {
+					Some(x) => x,
+					None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+				};
 
 				self.advance();
 
@@ -299,6 +327,8 @@ impl Parser {
 			}
 			_ => None
 		};
+
+		self.skip_new_lines();
 
 		current_token = match self.current_token.clone() {
 			Some(x) => x,
@@ -344,35 +374,42 @@ impl Parser {
 		let mut public = false;
 		let mut global = false;
 
-		if let NodeItem::Array(name) = &self.parent_node_item {
-			if name == "Program" {
+		match &self.parent_node_item {
+			NodeItem::Array(name) if name == "Program" => {
 				if self.next_pub.is_some() {
 					self.next_pub = None;
-						public = true;
+					public = true;
 				}
 
 				global = true;
 			}
+			_ => ()
 		}
 
-		let mut current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		let mut current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let identifier = match current_token.token_type() {
 			TokenType::Identifier => current_token.symbol().to_owned(),
 			_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 		};
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		match current_token.token_type() {
 			TokenType::Operator if current_token.symbol() == ":" => (),
 			_ => return Err(Error::expected(current_token.pos(), "':'", Some(&format!("'{}'", current_token.symbol()))))
 		};
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let var_type = match current_token.token_type() {
 			TokenType::Identifier => current_token.symbol().to_owned(),
@@ -381,8 +418,10 @@ impl Parser {
 
 		let mut var_decl = Node::new(NodeItem::VarDecl { identifier, var_type, public, global }, vec![]);
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		match current_token.token_type() {
 			TokenType::Operator if current_token.symbol() == "=" => {
@@ -403,24 +442,30 @@ impl Parser {
 	}
 
 	fn memb_decl(&mut self) -> Result<Node, Feedback> {
-		let mut current_token = self.current_token.clone()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		let mut current_token = match self.current_token.clone() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let identifier = match current_token.token_type() {
 			TokenType::Identifier => current_token.symbol().to_owned(),
 			_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 		};
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		match current_token.token_type() {
 			TokenType::Operator if current_token.symbol() == ":" => (),
 			_ => return Err(Error::expected(current_token.pos(), "':'", Some(&format!("'{}'", current_token.symbol()))))
 		}
 
-		current_token = self.advance()
-			.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?;
+		current_token = match self.advance() {
+			Some(x) => x,
+			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		};
 
 		let param_type = match current_token.token_type() {
 			TokenType::Identifier => current_token.symbol().to_owned(),
@@ -488,12 +533,7 @@ impl Parser {
 		Err(Error::expected(current_token.pos(), "number", Some(&format!("'{}'", current_token.symbol()))))
 	}
 
-	fn binary_op(
-		&mut self,
-		first_func: NodeFunc,
-		second_func: Option<NodeFunc>,
-		ops: Vec<&str>
-	) -> Result<Node, Feedback> {
+	fn binary_op(&mut self, first_func: NodeFunc, second_func: Option<NodeFunc>, ops: Vec<&str>) -> Result<Node, Feedback> {
 		let mut func = first_func;
 
 		if let Some(second_func) = second_func {

@@ -112,11 +112,7 @@ impl Error {
 
 		Feedback::new(FeedbackType::Error, Some(position), &description)
 	}
-/*
-	pub fn illegal_char(position: (&Position, &Position), character: char) -> Feedback {
-		Feedback::new(FeedbackType::Error, Some(position), &format!("Illegal character '{}'", character))
-	}
-*/
+	
 	pub fn invalid_syntax(position: Option<(&Position, &Position)>, description: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, position, description)
 	}

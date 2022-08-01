@@ -27,12 +27,12 @@ You cannot read from a variable that has not been initialized
 For instance, this code is invalid:
 
 ```bird
-import bird::io::console;
+import bird::io::Console;
 
 func main()
 {
 	var x: int;
-	console::output_line(x.parse<String>().unwrap()); // We are reading from 'x' but it has no value
+	Console.output_line(x.parse<String>().unwrap()); // We are reading from 'x' but it has no value
 }
 ```
 
