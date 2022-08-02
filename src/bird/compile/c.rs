@@ -5,8 +5,8 @@ use std::io::Write as _;
 use std::fmt::Write as _;
 
 use crate::bird::constants::compile;
-use crate::bird::parser::*;
 use crate::bird::feedback::*;
+use crate::bird::parser::*;
 
 fn types_file() -> Result<(), Feedback> {
 	if !Path::new("c/bird").exists() && fs::create_dir("c/bird").is_err() {
