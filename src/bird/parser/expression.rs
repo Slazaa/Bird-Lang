@@ -3,6 +3,8 @@ use crate::bird::feedback::*;
 use crate::bird::lexer::*;
 use crate::bird::parser::parser::*;
 
+pub type NodeFunc = fn(&mut Parser) -> Result<Node, Feedback>;
+
 pub fn expr(parser: &mut Parser) -> Result<Node, Feedback> {
 	binary_op(parser, comp_expr, None, vec!["&&", "||"])
 }
@@ -25,33 +27,42 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 	};
 
-	if *current_token.token_type() == TokenType::Literal {
-		parser.advance();
-		return Ok(Node::new(NodeItem::Literal(current_token.symbol().to_owned()), vec![]));
-	} else if *current_token.token_type() == TokenType::Operator && "+-".contains(current_token.symbol()) {
-		parser.advance();
-		let factor = factor(parser)?;
-		return Ok(Node::new(NodeItem::Operator(current_token.symbol().to_owned()), vec![factor]));
-	} else if *current_token.token_type() == TokenType::Separator && "(".contains(current_token.symbol()) {
-		parser.advance();
-		let expr = expr(parser)?;
-
-		current_token = match parser.current_token() {
-			Some(x) => x.clone(),
-			None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
-		};
-
-		if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
+	match current_token.token_type() {
+		TokenType::Literal => {
 			parser.advance();
-			return Ok(expr);
-		} else {
+			return Ok(Node::Literal(current_token.symbol().to_owned()));
+		}
+		TokenType::Identifier => {
+			parser.advance();
+			return Ok(Node::Identifier(current_token.symbol().to_owned()));
+		}
+		TokenType::Operator if "+-".contains(current_token.symbol()) => {
+			parser.advance();
+			let factor = factor(parser)?;
+			return Ok(Node::UnaryExpr { operator: current_token.symbol().to_owned(), node: Box::new(factor) });
+		}
+		TokenType::Separator if "(".contains(current_token.symbol()) => {
+			parser.advance();
+			let expr = expr(parser)?;
+
 			current_token = match parser.current_token() {
 				Some(x) => x.clone(),
 				None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 			};
 
-			return Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), "Expected ')'"));
+			if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
+				parser.advance();
+				return Ok(expr);
+			} else {
+				current_token = match parser.current_token() {
+					Some(x) => x.clone(),
+					None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+				};
+
+				return Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), "Expected ')'"));
+			}
 		}
+		_ => ()
 	}
 
 	if let Some(last_token) = parser.last_token() {
@@ -91,14 +102,14 @@ pub fn binary_op(parser: &mut Parser, first_func: NodeFunc, second_func: Option<
 				return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Invalid operator"))
 			}
 
-			let token_operator = NodeItem::Operator(token.symbol().to_owned());
+			let operator = token.symbol().to_owned();
 
 			parser.advance();
 
 			let old_left = left;
 			let right = second_func(parser)?;
 
-			left = Node::new(token_operator, vec![old_left, right]);
+			left = Node::BinExpr { operator, left: Box::new(old_left), right: Box::new(right) };
 		}
 	}
 

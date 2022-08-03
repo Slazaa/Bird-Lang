@@ -4,6 +4,23 @@ use crate::bird::parser::parser::*;
 
 use super::expression::*;
 
+fn check_scope(parser: &Parser, keyword: &str) -> bool {
+	match parser.parent_node() {
+		Node::Program { .. } => {
+			match keyword {
+				"func" => true,
+				_ => false
+			}
+		}
+		_ => {
+			match keyword {
+				"break" | "continue" | "else" | "if" | "loop" | "return" => true,
+				_ => false
+			}
+		}
+	}
+}
+
 pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 	let current_token = match parser.current_token() {
 		Some(x) => x.clone(),
@@ -17,7 +34,9 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 		}
 	}
 
-	let mut to_call: Option<NodeFunc> = None;
+	if !check_scope(parser, current_token.symbol()) {
+		return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
+	}
 	
 	match *current_token.token_type() {
 		TokenType::Keyword => {
@@ -26,7 +45,7 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 				"const" => todo!(),
 				"continue" => todo!(),
 				"return" => todo!(),
-				"var" => to_call = Some(var_decl),
+				"var" => return var_decl(parser),
 				_ => ()
 			}
 		}
@@ -34,18 +53,6 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 			todo!();
 		}
 		_ => ()
-	}
-
-	if let Some(to_call) = to_call {
-		match parser.parent_node_item() {
-			NodeItem::Array(name) if name == "Program" => {
-				match current_token.symbol() {
-					"break" | "continue" | "return" => return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol()))),
-					_ => return to_call(parser)
-				}
-			}
-			_ => ()
-		}
 	}
 
 	control_flow_statement(parser)
@@ -57,32 +64,17 @@ pub fn control_flow_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "token", None))
 	};
 
-	let mut to_call: Option<NodeFunc> = None;
+	if !check_scope(parser, current_token.symbol()) {
+		return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
+	}
 
 	if *current_token.token_type() == TokenType::Keyword {
 		match current_token.symbol() {
 			"else" => todo!(),
-			"func" => to_call = Some(func_decl),
+			"func" => return func_decl(parser),
 			"if" => todo!(),
 			"loop" => todo!(),
 			_ => ()
-		}
-	}
-
-	if let Some(to_call) = to_call {
-		if let NodeItem::Array(name) = parser.parent_node_item() {
-			if name == "Program" {
-				match current_token.symbol() {
-					"else" | "if" | "loop" => (),
-					_ => return to_call(parser)
-				}
-			} else {
-				if current_token.symbol() != "func" {
-					return to_call(parser);
-				}
-			}
-
-			return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
 		}
 	}
 
@@ -137,13 +129,9 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 			loop {
 				parser.skip_new_lines();
 
-				let param_entry = match memb_decl(parser) {
-					Ok(param) => param.entry().clone(),
+				match memb_decl(parser) {
+					Ok(param) => params.push(param),
 					Err(e) => return Err(e) 
-				};
-	
-				if let NodeItem::MembDecl { identifier, param_type } = param_entry {
-					params.push((identifier, param_type));
 				}
 	
 				parser.advance();
@@ -192,24 +180,27 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "token", None))
 	};
 
-	let mut func_decl = Node::new(NodeItem::FuncDecl { identifier, params, return_type, public }, vec![]);
+	let mut func_decl = Node::FuncDecl { public, identifier, params, return_type, body: None };
 
 	match current_token.token_type() {
 		TokenType::Separator if current_token.symbol() == "{" => {
 			parser.advance();
 
-			let parent_node_item = parser.parent_node_item()
+			let parent_node = parser.parent_node()
 				.clone();
 
-			let func_body = match parser.statements("Body") {
+			*parser.parent_node_mut() = func_decl.clone();
+
+			let func_body = match parser.statements() {
 				Ok(x) => x,
 				Err(e) => return Err(e)
 			};
 
-			*parser.parent_node_item_mut() = parent_node_item;
-	
-			func_decl.children_mut()
-				.push(func_body);
+			*parser.parent_node_mut() = parent_node;
+
+			if let Node::FuncDecl { body, .. } = &mut func_decl {
+				*body = Some(func_body);
+			}
 	
 			current_token = match parser.current_token() {
 				Some(x) => x.clone(),
@@ -233,8 +224,8 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut public = false;
 	let mut global = false;
 
-	match parser.parent_node_item() {
-		NodeItem::Array(name) if name == "Program" => {
+	match parser.parent_node() {
+		Node::Program { .. } => {
 			if parser.next_pub().is_some() {
 				*parser.next_pub_mut() = None;
 				public = true;
@@ -275,7 +266,7 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
-	let mut var_decl = Node::new(NodeItem::VarDecl { identifier, var_type, public, global }, vec![]);
+	let mut var_decl = Node::VarDecl { identifier, var_type, value: None, public, global };
 
 	current_token = match parser.advance() {
 		Some(x) => x.clone(),
@@ -286,13 +277,12 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 		TokenType::Operator if current_token.symbol() == "=" => {
 			parser.advance();
 
-			let expr = match expr(parser) {
-				Ok(x) => x,
-				Err(e) => return Err(e)
-			};
-
-			var_decl.children_mut()
-				.push(expr);
+			if let Node::VarDecl { value, .. } = &mut var_decl {
+				*value = match expr(parser) {
+					Ok(x) => Some(Box::new(x)),
+					Err(e) => return Err(e)
+				};
+			}
 		}
 		_ => ()
 	}
@@ -331,5 +321,38 @@ pub fn memb_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 		_ => return Err(Error::expected(current_token.pos(), "':'", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
-	Ok(Node::new(NodeItem::MembDecl { identifier, param_type }, vec![]))
+	Ok(Node::MembDecl { identifier, param_type })
+}
+
+pub fn identifier(parser: &mut Parser) -> Result<Node, Feedback> {
+	let mut current_token = match parser.current_token() {
+		Some(x) => x.clone(),
+		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+	};
+
+	let identifier = match current_token.token_type() {
+		TokenType::Identifier => current_token.symbol().to_owned(),
+		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
+	};
+
+	current_token = match parser.advance() {
+		Some(x) => x.clone(),
+		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+	};
+
+	match current_token.token_type() {
+		TokenType::Operator if current_token.symbol() == "=" => assignment(parser, &identifier),
+		TokenType::Separator if current_token.symbol() == "(" => todo!(),
+		_ => expr(parser)
+	}
+}
+
+// TODO
+pub fn assignment(parser: &mut Parser, identifier: &str) -> Result<Node, Feedback> {
+	let mut current_token = match parser.current_token() {
+		Some(x) => x.clone(),
+		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+	};
+
+	todo!();
 }

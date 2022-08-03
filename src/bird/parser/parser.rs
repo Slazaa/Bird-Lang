@@ -2,60 +2,46 @@ use crate::bird::lexer::{Token, TokenType};
 use crate::bird::feedback::*;
 use crate::bird::parser::statement::*;
 
-pub type NodeFunc = fn(&mut Parser) -> Result<Node, Feedback>;
-
 #[derive(Clone, Debug)]
-pub enum NodeItem {
-	Unknown,
+pub enum Node {
 	Literal(String),
-	Operator(String),
-	Array(String),
+	Identifier(String),
+	Program {
+		body: Vec<Node>
+	},
+	UnaryExpr {
+		operator: String,
+		node: Box<Node>
+	},
+	BinExpr {
+		operator: String,
+		left: Box<Node>,
+		right: Box<Node>
+	},
 	FuncDecl {
+		public: bool,
 		identifier: String,
-		params: Vec<(String, String)>,
+		params: Vec<Node>,
 		return_type: Option<String>,
-		public: bool
+		body: Option<Vec<Node>>
 	},
 	MembDecl {
 		identifier: String,
 		param_type: String
 	},
 	VarDecl {
+		public: bool,
+		global: bool,
 		identifier: String,
 		var_type: String,
-		public: bool,
-		global: bool
+		value: Option<Box<Node>>,
+	},
+	Assignment {
+		identifier: String,
 	},
 	FuncCall {
 		identifier: String,
 		params: Vec<String>
-	}
-}
-
-#[derive(Debug)]
-pub struct  Node {
-	entry: NodeItem,
-	children: Vec<Node>
-}
-
-impl Node {
-	pub fn new(entry: NodeItem, children: Vec<Node>) -> Self {
-		Self {
-			entry,
-			children
-		}
-	}
-
-	pub fn entry(&self) -> &NodeItem {
-		&self.entry
-	}
-
-	pub fn children(&self) -> &Vec<Node> {
-		&self.children
-	}
-
-	pub fn children_mut(&mut self) -> &mut Vec<Node> {
-		&mut self.children
 	}
 }
 
@@ -64,7 +50,7 @@ pub struct Parser {
 	token_index: i32,
 	current_token: Option<Token>,
 	last_token: Option<Token>,
-	parent_node_item: NodeItem,
+	parent_node: Node,
 	next_pub: Option<Token>
 }
 
@@ -75,12 +61,22 @@ impl Parser {
 			token_index: -1,
 			current_token: None,
 			last_token: None,
-			parent_node_item: NodeItem::Unknown,
+			parent_node: Node::Program { body: Vec::new() },
 			next_pub: None
 		};
 
 		parser.advance();
-		parser.statements("Program")
+
+		let statements = match parser.statements() {
+			Ok(x) => x,
+			Err(e) => return Err(e)
+		};
+
+		if let Node::Program { body } = &mut parser.parent_node {
+			*body = statements;
+		}
+
+		Ok(parser.parent_node)
 	}
 
 	pub fn current_token(&self) -> Option<&Token> {
@@ -91,12 +87,12 @@ impl Parser {
 		self.last_token.as_ref()
 	}
 
-	pub fn parent_node_item(&self) -> &NodeItem {
-		&self.parent_node_item
+	pub fn parent_node(&self) -> &Node {
+		&self.parent_node
 	}
 
-	pub fn parent_node_item_mut(&mut self) -> &mut NodeItem {
-		&mut self.parent_node_item
+	pub fn parent_node_mut(&mut self) -> &mut Node {
+		&mut self.parent_node
 	}
 
 	pub fn next_pub(&self) -> Option<&Token> {
@@ -133,9 +129,8 @@ impl Parser {
 		}
 	}
 
-	pub fn statements(&mut self, name: &str) -> Result<Node, Feedback> {
-		let mut statements = Node::new(NodeItem::Array(name.to_owned()), vec![]);
-		self.parent_node_item = statements.entry.clone();
+	pub fn statements(&mut self) -> Result<Vec<Node>, Feedback> {
+		let mut statements = Vec::new();
 
 		loop {
 			self.skip_new_lines();
@@ -145,8 +140,9 @@ impl Parser {
 				None => break
 			};
 
-			match &self.parent_node_item {
-				NodeItem::Array(name) if name != "Program" && current_token.symbol() == "}" => break,
+			match &self.parent_node {
+				Node::Program { .. } => (),
+				_ if current_token.symbol() == "}" => break,
 				_ => ()
 			}
 
@@ -168,8 +164,7 @@ impl Parser {
 				return Err(Error::expected(next_pub.pos(), "item", None));
 			}
 
-			statements.children_mut()
-				.push(statement);
+			statements.push(statement);
 		}
 
 		Ok(statements)

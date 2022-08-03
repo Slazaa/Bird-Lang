@@ -1,4 +1,4 @@
-pub use self::parser::{Node, NodeItem};
+pub use self::parser::Node;
 
 use super::feedback::Feedback;
 use super::lexer::Token;

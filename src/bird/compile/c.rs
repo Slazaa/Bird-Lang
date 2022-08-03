@@ -102,27 +102,36 @@ impl Compiler {
 		Ok(())
 	}
 
-	fn translate_ast(&mut self, node: &Node) -> Result<String, Feedback> {
-		match node.entry() {
-			NodeItem::Array(_) => self.array(node),
-			NodeItem::FuncDecl { identifier, params, return_type, public } => self.func_decl(identifier, params, return_type, *public, node),
-			NodeItem::VarDecl { identifier, var_type, public, global } => self.var_decl(identifier, var_type, *public, *global, node),
+	fn translate_ast(&mut self, parent_node: &Node) -> Result<String, Feedback> {
+		match parent_node {
+			Node::Program { .. } => self.program(parent_node),
+			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body.clone()),
+			Node::VarDecl { public, global, identifier, var_type, value } => {
+				let value = match value {
+					Some(x) => Some((**x).clone()),
+					None => None
+				};
+
+				self.var_decl(*public, *global, identifier, var_type, value)
+			}
 			_ => Err(Error::unspecified("Invalid node"))
 		}
 	}
 
-	fn array(&mut self, node: &Node) -> Result<String, Feedback> {
+	fn program(&mut self, node: &Node) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		for node in node.children() {
-			let translated_node = self.translate_ast(node)?;
-			res.push_str(&translated_node);
+		if let Node::Program { body } = node {
+			for node in body {
+				let translated_node = self.translate_ast(node)?;
+				res.push_str(&translated_node);
+			}
 		}
 
 		Ok(res)
 	}
 
-	fn func_decl(&mut self, identifier: &str, params: &Vec<(String, String)>, return_type: &Option<String>, public: bool, node: &Node) -> Result<String, Feedback> {
+	fn func_decl(&mut self, public: bool, identifier: &str, params: &Vec<Node>, return_type: &Option<String>, body: Option<Vec<Node>>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		match return_type {
@@ -133,8 +142,10 @@ impl Compiler {
 		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, identifier).unwrap();
 
 		if !params.is_empty() {
-			for (param_id, param_type) in params {
-				write!(&mut res, "{} {}, ", param_type, param_id).unwrap();
+			for node in params {
+				if let Node::MembDecl { identifier, param_type } = node {
+					write!(&mut res, "{} {}, ", param_type, identifier).unwrap();
+				}
 			}
 
 			res.truncate(res.len() - 2);
@@ -144,20 +155,16 @@ impl Compiler {
 
 		res.push(')');
 		
-		if let Some(body) = node.children()
-			.iter()
-			.find(|node| matches!(node.entry(), NodeItem::Array(name) if name == "Body"))
-		{
-			let mut node_signature = Node::new(node.entry().clone(), vec![]);
-			node_signature.children_mut().clear();
-
+		if let Some(body) = body {
+			let node_signature = Node::FuncDecl { public, identifier: identifier.to_owned(), params: params.to_vec(), return_type: return_type.to_owned(), body: None };
 			let node_signature_string = self.translate_ast(&node_signature)?;
+
 			self.func_protos.push(node_signature_string);
 
 			res.push('{');
 
-			for node in body.children() {
-				res.push_str(&self.translate_ast(node)?);
+			for node in body {
+				res.push_str(&self.translate_ast(&node)?);
 			}
 
 			res.push('}');
@@ -172,7 +179,7 @@ impl Compiler {
 		Ok(res)
 	}
 
-	fn var_decl(&mut self, identifier: &str, var_type: &str, public: bool, global: bool, node: &Node) -> Result<String, Feedback> {
+	fn var_decl(&mut self, public: bool, global: bool, identifier: &str, var_type: &str, value: Option<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		if global && !public {
@@ -181,74 +188,25 @@ impl Compiler {
 		
 		write!(res, "{} ", var_type).unwrap();
 
-		match node.children().is_empty() {
-			true => {
-				if write!(&mut res, "{};", identifier).is_err() {
-					return Err(Error::unspecified("Failed to write on result"));
-				}
-			}
-			false => {
-				let expr = match self.expr(&node.children()[0]) {
+		match value {
+			Some(value) => {
+				let expr = match self.expr(&value) {
 					Ok(x) => x,
 					Err(e) => return Err(e)
 				};
 
 				write!(&mut res, "{}={};", identifier, expr).unwrap();
 			}
+			None => write!(&mut res, "{};", identifier).unwrap()
 		}
 
 		Ok(res)
 	}
 
 	fn expr(&mut self, node: &Node) -> Result<String, Feedback> {
-		match node.entry() {
-			NodeItem::Operator(operator) => self.operator(operator, node),
-			NodeItem::Literal(value) => Ok(value.clone()),
+		match node {
+			Node::Literal(value) => Ok(value.to_owned()),
 			_ => todo!()
 		}
-	}
-
-	fn operator(&mut self, operator: &str, node: &Node) -> Result<String, Feedback> {
-		let mut res = String::new();
-
-		let mut get_val = |index: usize| {
-			match node.children()[index].entry() {
-				NodeItem::Literal(value) => Ok(value.clone()),
-				NodeItem::Operator(operator) => {
-					match self.operator(operator, &node.children()[0]) {
-						Ok(x) => Ok(x),
-						Err(e) => Err(e)
-					}
-				}
-				_ => Err(Error::unspecified("Invalid node"))
-			}
-		};
-
-		match node.children().len() {
-			1 => {
-				let first = match get_val(0) {
-					Ok(x) => x,
-					Err(e) => return Err(e)
-				};
-
-				write!(&mut res, "{}{}", operator, first).unwrap();
-			}
-			2 => {
-				let first = match get_val(0) {
-					Ok(x) => x,
-					Err(e) => return Err(e)
-				};
-
-				let second = match get_val(1) {
-					Ok(x) => x,
-					Err(e) => return Err(e)
-				};
-
-				write!(&mut res, "{}{}{}", first, operator, second).unwrap();
-			}
-			_ => return Err(Error::unspecified("Invalid node"))
-		}
-
-		Ok(res)
 	}
 }
