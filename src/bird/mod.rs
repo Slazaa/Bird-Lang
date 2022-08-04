@@ -8,6 +8,7 @@ use self::feedback::*;
 use self::lexer::*;
 use self::parser::*;
 
+/// The `run` mode automatically runs the program.
 pub fn run(filename: &str) -> Result<(), Feedback> {
 	let tokens = Lexer::parse(filename)?;
 	let _ast = Parser::parse(&tokens)?;
@@ -15,6 +16,7 @@ pub fn run(filename: &str) -> Result<(), Feedback> {
 	Ok(())
 }
 
+/// The `c` mode compiles the code into the C language.
 pub fn to_c(filename: &str) -> Result<(), Feedback> {
 	let tokens = Lexer::parse(filename)?;
 	let ast = Parser::parse(&tokens)?;

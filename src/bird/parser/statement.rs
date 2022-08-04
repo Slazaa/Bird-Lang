@@ -14,7 +14,9 @@ fn check_scope(parser: &Parser, keyword: &str) -> bool {
 		}
 		_ => {
 			match keyword {
-				"break" | "continue" | "else" | "if" | "loop" | "return" => true,
+				"break"  | "continue" | "const" |
+				"else"   | "if"       | "loop"  |
+				"return" | "var" => true,
 				_ => false
 			}
 		}
@@ -29,7 +31,7 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 
 	if let Some(next_pub) = parser.next_pub() {
 		match current_token.symbol() {
-			"func" | "struct" => (),
+			"func" => (),
 			_ => return Err(Error::expected(next_pub.pos(), "item", Some(current_token.symbol())))
 		}
 	}

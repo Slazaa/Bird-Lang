@@ -59,20 +59,20 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 					None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 				};
 
-				return Err(Error::invalid_syntax(Some((current_token.pos_start(), current_token.pos_end())), "Expected ')'"));
+				return Err(Error::invalid_syntax(Some(current_token.pos()), "Expected ')'"));
 			}
 		}
 		_ => ()
 	}
 
 	if let Some(last_token) = parser.last_token() {
-		let mut pos_start = last_token.pos_start().clone();
-		let mut pos_end = last_token.pos_end().clone();
+		let pos = last_token.pos();
+		let mut pos = (pos.0.clone(), pos.1.clone());
 
-		*pos_start.colomn_mut() += 2;
-		*pos_end.colomn_mut() += 2;
+		*pos.0.colomn_mut() += 2;
+		*pos.1.colomn_mut() += 2;
 
-		return Err(Error::expected((&pos_start, &pos_end), "Expected number", None));
+		return Err(Error::expected((&pos.0, &pos.1), "Expected number", None));
 	}
 
 	Err(Error::expected(current_token.pos(), "number", Some(&format!("'{}'", current_token.symbol()))))
@@ -90,7 +90,7 @@ pub fn binary_op(parser: &mut Parser, first_func: NodeFunc, second_func: Option<
 
 	if let Some(token) = parser.current_token() {
 		if *token.token_type() != TokenType::Operator && *token.token_type() != TokenType::Separator {
-			return Err(Error::expected((token.pos_start(), token.pos_end()), "operator", Some(&format!("'{}'", token.symbol()))));
+			return Err(Error::expected(token.pos(), "operator", Some(&format!("'{}'", token.symbol()))));
 		}
 		
 		while let Some(token) = parser.current_token() {
@@ -99,7 +99,7 @@ pub fn binary_op(parser: &mut Parser, first_func: NodeFunc, second_func: Option<
 			}
 
 			if !OPERATORS.contains(&token.symbol()) {
-				return Err(Error::invalid_syntax(Some((token.pos_start(), token.pos_end())), "Invalid operator"))
+				return Err(Error::invalid_syntax(Some(token.pos()), "Invalid operator"))
 			}
 
 			let operator = token.symbol().to_owned();
