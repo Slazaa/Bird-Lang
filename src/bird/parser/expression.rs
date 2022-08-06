@@ -1,7 +1,7 @@
 use crate::bird::constants::*;
 use crate::bird::feedback::*;
 use crate::bird::lexer::*;
-use crate::bird::parser::parser::*;
+use crate::bird::parser::parse::*;
 
 pub type NodeFunc = fn(&mut Parser) -> Result<Node, Feedback>;
 

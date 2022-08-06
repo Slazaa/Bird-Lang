@@ -1,23 +1,27 @@
 use crate::bird::feedback::*;
 use crate::bird::lexer::*;
-use crate::bird::parser::parser::*;
+use crate::bird::parser::parse::*;
 
 use super::expression::*;
 
-fn check_scope(parser: &Parser, keyword: &str) -> bool {
+fn check_scope(parser: &Parser, token: &Token) -> bool {
 	match parser.parent_node() {
 		Node::Program { .. } => {
-			match keyword {
-				"func" => true,
-				_ => false
+			match token.token_type() {
+				TokenType::Keyword => return matches!(token.symbol(), "func"),
+				_ => return false
 			}
 		}
 		_ => {
-			match keyword {
-				"break"  | "continue" | "const" |
-				"else"   | "if"       | "loop"  |
-				"return" | "var" => true,
-				_ => false
+			match token.token_type() {
+				TokenType::Keyword => return matches!(
+					token.symbol(),
+					"break"  | "continue" | "const" |
+					"else"   | "if"       | "loop"  |
+					"return" | "var"
+				),
+				TokenType::Identifier => return true,
+				_ => return false
 			}
 		}
 	}
@@ -36,7 +40,7 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 		}
 	}
 
-	if !check_scope(parser, current_token.symbol()) {
+	if !check_scope(parser, &current_token) {
 		return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
 	}
 	
@@ -51,9 +55,7 @@ pub fn statement(parser: &mut Parser) -> Result<Node, Feedback> {
 				_ => ()
 			}
 		}
-		TokenType::Identifier => {
-			todo!();
-		}
+		TokenType::Identifier => return assignment(parser),
 		_ => ()
 	}
 
@@ -66,7 +68,7 @@ pub fn control_flow_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "token", None))
 	};
 
-	if !check_scope(parser, current_token.symbol()) {
+	if !check_scope(parser, &current_token) {
 		return Err(Error::unexpected(current_token.pos(), &format!("'{}'", current_token.symbol())));
 	}
 
@@ -226,16 +228,13 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut public = false;
 	let mut global = false;
 
-	match parser.parent_node() {
-		Node::Program { .. } => {
-			if parser.next_pub().is_some() {
-				*parser.next_pub_mut() = None;
-				public = true;
-			}
-
-			global = true;
+	if let Node::Program { .. } = parser.parent_node() {
+		if parser.next_pub().is_some() {
+			*parser.next_pub_mut() = None;
+			public = true;
 		}
-		_ => ()
+
+		global = true;
 	}
 
 	let mut current_token = match parser.advance() {
@@ -326,7 +325,7 @@ pub fn memb_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	Ok(Node::MembDecl { identifier, param_type })
 }
 
-pub fn identifier(parser: &mut Parser) -> Result<Node, Feedback> {
+pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut current_token = match parser.current_token() {
 		Some(x) => x.clone(),
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
@@ -342,19 +341,61 @@ pub fn identifier(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 	};
 
-	match current_token.token_type() {
-		TokenType::Operator if current_token.symbol() == "=" => assignment(parser, &identifier),
-		TokenType::Separator if current_token.symbol() == "(" => todo!(),
-		_ => expr(parser)
+	match current_token.symbol() {
+		"(" => return func_call(parser, &identifier),
+		"=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" => (),
+		_ => return Err(Error::expected(current_token.pos(), "'(' or '='", Some(&format!("'{}'", current_token.symbol()))))
 	}
+
+	let operator = current_token.symbol().to_owned();
+
+	parser.advance();
+
+	let value = match expr(parser) {
+		Ok(x) => x,
+		Err(e) => return Err(e)
+	};
+
+	Ok(Node::Assignment { identifier, operator, value: Box::new(value) })
 }
 
-// TODO
-pub fn assignment(parser: &mut Parser, identifier: &str) -> Result<Node, Feedback> {
-	let mut current_token = match parser.current_token() {
+pub fn func_call(parser: &mut Parser, identifier: &str) -> Result<Node, Feedback> {
+	let mut current_token = match parser.advance() {
 		Some(x) => x.clone(),
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 	};
 
-	todo!();
+	let mut params = Vec::new();
+
+	match current_token.token_type() {
+		TokenType::Separator if current_token.symbol() == ")" => (),
+		_ => {
+			loop {
+				parser.skip_new_lines();
+
+				match current_token.token_type() {
+					TokenType::Identifier => params.push(Node::Identifier(current_token.symbol().to_owned())),
+					_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
+				}
+
+				parser.advance();
+				parser.skip_new_lines();
+
+				current_token = match parser.current_token() {
+					Some(x) => x.clone(),
+					None => return Err(Error::expected(current_token.pos(), "',' or ')'", None))
+				};
+
+				match current_token.symbol() {
+					"," => parser.advance(),
+					")" => break,
+					_ => return Err(Error::expected(current_token.pos(), "',' or ')'", Some(&format!("'{}'", current_token.symbol()))))
+				};
+			}
+		}
+	}
+
+	parser.advance();
+
+	Ok(Node::FuncCall { identifier: identifier.to_owned(), params })
 }

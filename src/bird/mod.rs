@@ -16,7 +16,7 @@ pub fn run(filename: &str) -> Result<(), Feedback> {
 	Ok(())
 }
 
-/// The `c` mode compiles the code into the C language.
+/// The `c` mode compiles the code into C.
 pub fn to_c(filename: &str) -> Result<(), Feedback> {
 	let tokens = Lexer::parse(filename)?;
 	let ast = Parser::parse(&tokens)?;

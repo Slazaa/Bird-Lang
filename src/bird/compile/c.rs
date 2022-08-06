@@ -95,7 +95,7 @@ impl Compiler {
 			Err(e) => return Err(e)
 		}
 
-		if write!(compiler.main_file, "int main(int argc, char **argv){{{}main();return 0;}}", compile::FUNC_PREFIX).is_err() {
+		if write!(compiler.main_file, "int main(int argc, char** argv){{{}main();return 0;}}", compile::FUNC_PREFIX).is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
@@ -107,13 +107,11 @@ impl Compiler {
 			Node::Program { .. } => self.program(parent_node),
 			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body.clone()),
 			Node::VarDecl { public, global, identifier, var_type, value } => {
-				let value = match value {
-					Some(x) => Some((**x).clone()),
-					None => None
-				};
-
+				let value = value.as_ref().map(|x| (**x).clone());
 				self.var_decl(*public, *global, identifier, var_type, value)
 			}
+			Node::Assignment { identifier, operator, value } => self.assignment(identifier, operator, (**value).clone()),
+			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
 			_ => Err(Error::unspecified("Invalid node"))
 		}
 	}
@@ -190,12 +188,12 @@ impl Compiler {
 
 		match value {
 			Some(value) => {
-				let expr = match self.expr(&value) {
+				let value = match self.expr(&value) {
 					Ok(x) => x,
 					Err(e) => return Err(e)
 				};
 
-				write!(&mut res, "{}={};", identifier, expr).unwrap();
+				write!(&mut res, "{}={};", identifier, value).unwrap();
 			}
 			None => write!(&mut res, "{};", identifier).unwrap()
 		}
@@ -208,5 +206,38 @@ impl Compiler {
 			Node::Literal(value) => Ok(value.to_owned()),
 			_ => todo!()
 		}
+	}
+
+	fn assignment(&mut self, identifier: &str, operator: &str, value: Node) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		let value = match self.expr(&value) {
+			Ok(x) => x,
+			Err(e) => return Err(e)
+		};
+
+		write!(res, "{}{}{};", identifier, operator, value).unwrap();
+
+		Ok(res)
+	}
+
+	fn func_call(&mut self, identifier: &str, params: &Vec<Node>) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, identifier).unwrap();
+
+		if !params.is_empty() {
+			for node in params {
+				if let Node::Identifier(identifier) = node {
+					write!(&mut res, "{}, ", identifier).unwrap();
+				}
+			}
+
+			res.truncate(res.len() - 2);
+		}
+
+		res.push_str(");");
+
+		Ok(res)
 	}
 }

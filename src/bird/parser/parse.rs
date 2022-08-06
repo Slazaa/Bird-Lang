@@ -2,6 +2,7 @@ use crate::bird::lexer::{Token, TokenType};
 use crate::bird::feedback::*;
 use crate::bird::parser::statement::*;
 
+/// This enum defines the nodes of the AST.
 #[derive(Clone, Debug)]
 pub enum Node {
 	Literal(String),
@@ -38,10 +39,12 @@ pub enum Node {
 	},
 	Assignment {
 		identifier: String,
+		operator: String,
+		value: Box<Node>
 	},
 	FuncCall {
 		identifier: String,
-		params: Vec<String>
+		params: Vec<Node>
 	}
 }
 

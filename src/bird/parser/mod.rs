@@ -1,9 +1,9 @@
-pub use self::parser::Node;
+pub use self::parse::Node;
 
 use super::feedback::Feedback;
 use super::lexer::Token;
 
-mod parser;
+mod parse;
 mod statement;
 mod expression;
 
@@ -11,6 +11,6 @@ pub struct Parser;
 
 impl Parser {
 	pub fn parse(tokens: &[Token]) -> Result<Node, Feedback> {
-		parser::Parser::parse(tokens)
+		parse::Parser::parse(tokens)
 	}
 }

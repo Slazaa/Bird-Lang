@@ -219,8 +219,15 @@ impl Lexer {
 		let pos_start = self.pos.clone();
 		let mut pos_end = pos_start.clone();
 
-		while let Some(current_char) = self.current_char {
-			if !current_char.is_ascii_digit() && current_char != '.' && current_char != '_' {
+		while let Some(mut current_char) = self.current_char {
+			if current_char == '_' {
+				current_char = match self.advance() {
+					Some(x) => x,
+					None => break
+				};
+			}
+
+			if !current_char.is_ascii_digit() && current_char != '.' {
 				break;
 			}
 
