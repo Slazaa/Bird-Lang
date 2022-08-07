@@ -1,4 +1,4 @@
-import std::ffi::types::c_void;
+import bird::ffi::types::c_void;
 
 func malloc(size: uint) -> *mut c_void
 func realloc(ptr: *mut c_void, size: uint) -> *mut c_void
