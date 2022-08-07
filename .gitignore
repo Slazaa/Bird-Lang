@@ -1,4 +1,4 @@
-/target
 /bird_src
-/c
-Cargo.lock
+rust/c_output
+rust/target
+rust/Cargo.lock
