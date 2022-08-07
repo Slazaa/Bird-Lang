@@ -7,7 +7,7 @@ A variable is declared with the keyworkd `var` followed by its name, a colomn an
 ```bird
 func main()
 {
-	var x: int;
+	var x: int
 }
 ```
 
@@ -16,10 +16,10 @@ You can initilize it or assign it a value after it has been declared:
 ```bird
 func main()
 {
-	var x: int = 10; // We initialize the variable to 10
-	// Or
-	var x: int; // We declare the variable
-	x = 10; // Then assign it the value 10
+	var x: int = 10 # We initialize the variable to 10
+	# Or
+	var x: int # We declare the variable
+	x = 10 # Then assign it the value 10
 }
 ```
 
@@ -27,12 +27,12 @@ You cannot read from a variable that has not been initialized
 For instance, this code is invalid:
 
 ```bird
-import bird::io::Console;
+import bird::io::Console
 
 func main()
 {
-	var x: int;
-	Console.output_line(x.parse<String>().unwrap()); // We are reading from 'x' but it has no value
+	var x: int
+	Console.output_line(x.parse<String>().unwrap()) # We are reading from 'x' but it has no value
 }
 ```
 
