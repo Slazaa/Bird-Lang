@@ -1,0 +1,39 @@
+import std::ffi::types::c_void;
+
+func malloc(size: uint) -> *mut c_void
+func realloc(ptr: *mut c_void, size: uint) -> *mut c_void
+func free(ptr: *mut c_void)
+
+pub trait Allocator
+{
+	pub func new() -> Self
+	
+	pub func alloc(&self, size: uint) -> *mut T
+	pub func realloc(&self, ptr: *mut T, size: uint) -> *mut T
+	pub func dealloc(&self, ptr: *mut T)
+}
+
+pub struct DefaultAlloc
+
+impl Allocator for DefaultAlloc
+{
+	pub func new() -> Self
+	{
+		return Self
+	}
+
+	pub func alloc(&self, size: uint) -> *mut T
+	{
+		return malloc(size) as *mut T
+	}
+
+	pub fn realloc(&self, ptr: *mut T, size: uint) - > *mut T
+	{
+		return realloc(ptr, size) as *mut T
+	}
+
+	pub fn dealloc(&self, ptr: *mut T)
+	{
+		free(ptr)
+	}
+}
