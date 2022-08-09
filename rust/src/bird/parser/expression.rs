@@ -3,6 +3,7 @@ use crate::bird::feedback::*;
 use crate::bird::lexer::*;
 use crate::bird::parser::parse::*;
 
+/// This type represents the functions that create a `Node`
 pub type NodeFunc = fn(&mut Parser) -> Result<Node, Feedback>;
 
 pub fn expr(parser: &mut Parser) -> Result<Node, Feedback> {

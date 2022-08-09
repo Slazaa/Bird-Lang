@@ -7,47 +7,18 @@ use crate::bird::parser::statement::*;
 pub enum Node {
 	Literal(String),
 	Identifier(String),
-	Program {
-		body: Vec<Node>
-	},
-	UnaryExpr {
-		operator: String,
-		node: Box<Node>
-	},
-	BinExpr {
-		operator: String,
-		left: Box<Node>,
-		right: Box<Node>
-	},
-	FuncDecl {
-		public: bool,
-		identifier: String,
-		params: Vec<Node>,
-		return_type: Option<String>,
-		body: Option<Vec<Node>>
-	},
-	MembDecl {
-		identifier: String,
-		param_type: String
-	},
-	VarDecl {
-		public: bool,
-		global: bool,
-		identifier: String,
-		var_type: String,
-		value: Option<Box<Node>>,
-	},
-	Assignment {
-		identifier: String,
-		operator: String,
-		value: Box<Node>
-	},
-	FuncCall {
-		identifier: String,
-		params: Vec<Node>
-	}
+	Program { body: Vec<Node> },
+	UnaryExpr { operator: String, node: Box<Node> },
+	BinExpr { operator: String, left: Box<Node>, right: Box<Node> },
+	FuncDecl { public: bool, identifier: String, params: Vec<Node>, return_type: Option<String>, body: Option<Vec<Node>> },
+	MembDecl { identifier: String, param_type: String },
+	VarDecl { public: bool, global: bool, identifier: String, var_type: String, value: Option<Box<Node>>, },
+	Assignment { identifier: String, operator: String, value: Box<Node> },
+	FuncCall { identifier: String, params: Vec<Node> },
+	IfStatement { condition: Box<Node>, body: Vec<Node> }
 }
 
+/// The `Parser` generates an AST from a `Token` list.
 pub struct Parser {
 	tokens: Vec<Token>,
 	token_index: i32,
@@ -58,6 +29,7 @@ pub struct Parser {
 }
 
 impl Parser {
+	/// Parse the `Token` list into an AST.
 	pub fn parse(tokens: &[Token]) -> Result<Node, Feedback> {
 		let mut parser = Self { 
 			tokens: tokens.to_vec(),
@@ -82,30 +54,40 @@ impl Parser {
 		Ok(parser.parent_node)
 	}
 
+	/// Returns an option to a reference to the current token.
 	pub fn current_token(&self) -> Option<&Token> {
 		self.current_token.as_ref()
 	}
 
+	/// Returns an option to a reference to the last token.
 	pub fn last_token(&self) -> Option<&Token> {
 		self.last_token.as_ref()
 	}
 
+	/// Returns a reference the parent node.
 	pub fn parent_node(&self) -> &Node {
 		&self.parent_node
 	}
 
+	/// Returns a mutable reference to the parent node.
 	pub fn parent_node_mut(&mut self) -> &mut Node {
 		&mut self.parent_node
 	}
 
+	/// Returns an option to a reference to the `pub` token.
+	/// If it is `Some`, the next token is affected by the `pub` keyword.
+	/// Else returns `None`.
 	pub fn next_pub(&self) -> Option<&Token> {
 		self.next_pub.as_ref()
 	}
 
+	/// Returns an option to a mutable reference to next pub.
 	pub fn next_pub_mut(&mut self) -> &mut Option<Token> {
 		&mut self.next_pub
 	}
 
+	/// Advances to the next `Token`.
+	/// Sets the current `Token` to `None` if no more `Token`.
 	pub fn advance(&mut self) -> Option<&Token> {
 		self.token_index += 1;
 		self.last_token = self.current_token.clone();
@@ -123,6 +105,7 @@ impl Parser {
 		None
 	}
 
+	/// Advances the current `Token` util it is not a new line `Token`.
 	pub fn skip_new_lines(&mut self) {
 		while let Some(current_token) = self.current_token.clone() {
 			match current_token.token_type() {
@@ -132,6 +115,7 @@ impl Parser {
 		}
 	}
 
+	/// Evaluates the statements.
 	pub fn statements(&mut self) -> Result<Vec<Node>, Feedback> {
 		let mut statements = Vec::new();
 

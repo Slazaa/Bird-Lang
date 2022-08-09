@@ -123,8 +123,9 @@ pub struct Lexer {
 }
 
 impl Lexer {
-	/// Constructs a `Lexer`.
-	fn new(filename: &str) -> Result<Self, Feedback> {
+	/// Parse the code and return a `Vec` of `Token` if the code respects the lexing rules,
+	/// else return a `Feedback`.
+	pub fn parse(filename: &str) -> Result<Vec<Token>, Feedback> {
 		let text = match fs::read_to_string(filename) {
 			Ok(x) => x,
 			Err(_) => return Err(Error::no_file_or_dir(filename))
@@ -137,17 +138,6 @@ impl Lexer {
 		};
 
 		lexer.advance();
-		
-		Ok(lexer)
-	}
-
-	/// Parse the code and return a `Vec` of `Token` if the code respects the lexing rules,
-	/// else return a `Feedback`.
-	pub fn parse(filename: &str) -> Result<Vec<Token>, Feedback> {
-		let mut lexer = match Self::new(filename) {
-			Ok(x) => x,
-			Err(e) => return Err(e)
-		};
 
 		let mut tokens = Vec::new();
 
@@ -269,10 +259,14 @@ impl Lexer {
 			self.advance();
 		}
 
-		let token_type = if KEYWORDS.contains(&res.as_str()) {
-			TokenType::Keyword
-		} else {
-			TokenType::Identifier
+		let token_type = match KEYWORDS.contains(&res.as_str()) {
+			true => TokenType::Keyword,
+			false => {
+				match ["false", "true"].contains(&res.as_str()) {
+					true => TokenType::Literal,
+					false => TokenType::Identifier
+				}
+			}
 		};
 
 		Token::new(token_type, &res, &pos_start, Some(&pos_end))
