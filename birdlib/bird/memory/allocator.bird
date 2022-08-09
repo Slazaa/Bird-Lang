@@ -6,33 +6,26 @@ func free(ptr: *mut c_void)
 
 pub trait Allocator
 {
-	pub func new() -> Self
-	
-	pub func alloc(&self, size: uint) -> *mut T
-	pub func realloc(&self, ptr: *mut T, size: uint) -> *mut T
-	pub func dealloc(&self, ptr: *mut T)
+	pub func alloc(size: uint) -> *mut T
+	pub func realloc(ptr: *mut T, size: uint) -> *mut T
+	pub func free(ptr: *mut T)
 }
 
-pub struct DefaultAlloc
+pub struct BirdAlloc
 
-impl Allocator for DefaultAlloc
+impl Allocator for BirdAlloc
 {
-	pub func new() -> Self
-	{
-		return Self
-	}
-
-	pub func alloc(&self, size: uint) -> *mut T
+	pub func alloc(size: uint) -> *mut T
 	{
 		return malloc(size) as *mut T
 	}
 
-	pub fn realloc(&self, ptr: *mut T, size: uint) - > *mut T
+	pub fn realloc(ptr: *mut T, size: uint) - > *mut T
 	{
 		return realloc(ptr, size) as *mut T
 	}
 
-	pub fn dealloc(&self, ptr: *mut T)
+	pub fn free(ptr: *mut T)
 	{
 		free(ptr)
 	}
