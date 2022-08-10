@@ -85,7 +85,7 @@ impl Compiler {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
-		match compiler.translate_ast(&ast) {
+		match compiler.eval(&ast) {
 			Ok(res) => {
 				for proto in compiler.func_protos {
 					if write!(compiler.main_file, "{}", proto).is_err() {
@@ -107,18 +107,19 @@ impl Compiler {
 		Ok(())
 	}
 
-	fn translate_ast(&mut self, parent_node: &Node) -> Result<String, Feedback> {
-		match parent_node {
-			Node::Program { .. } => self.program(parent_node),
+	fn eval(&mut self, node: &Node) -> Result<String, Feedback> {
+		match node {
+			Node::Literal(value) => Ok(value.to_owned()),
+			Node::Identifier(value) => Ok(value.to_owned()),
+			Node::Operator(value) => Ok(value.to_owned()),
+			Node::Program { .. } => self.program(node),
+			Node::UnaryExpr { operator, node } => self.unary_expr(operator, node),
+			Node::BinExpr { operator, left, right } => self.bin_expr(operator, left, right),
 			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body),
-			Node::VarDecl { public, global, identifier, var_type, value } => {
-				let value = value.as_ref().map(|x| (**x).clone());
-				self.var_decl(*public, *global, identifier, var_type, &value)
-			}
+			Node::VarDecl { public, global, identifier, var_type, value } => self.var_decl(*public, *global, identifier, var_type, value),
 			Node::Assignment { identifier, operator, value } => self.assignment(identifier, operator, &*value),
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
-			Node::IfStatement { condition, body } => self.if_statement(&*condition, body),
-			_ => Err(Error::unspecified("Invalid node"))
+			Node::IfStatement { condition, body } => self.if_statement(&*condition, body)
 		}
 	}
 
@@ -127,7 +128,7 @@ impl Compiler {
 
 		if let Node::Program { body } = node {
 			for node in body {
-				let translated_node = self.translate_ast(node)?;
+				let translated_node = self.eval(node)?;
 				res.push_str(&translated_node);
 			}
 		}
@@ -135,21 +136,27 @@ impl Compiler {
 		Ok(res)
 	}
 
-	fn func_decl(&mut self, public: bool, identifier: &str, params: &Vec<Node>, return_type: &Option<String>, body: &Option<Vec<Node>>) -> Result<String, Feedback> {
+	fn unary_expr(&mut self, operator: &Node, node: &Node) -> Result<String, Feedback> {
+		Ok(format!("{}{}", self.eval(operator)?, self.eval(node)?))
+	}
+
+	fn bin_expr(&mut self, operator: &Node, left: &Node, right: &Node) -> Result<String, Feedback> {
+		Ok(format!("{}{}{}", self.eval(left)?, self.eval(operator)?, self.eval(right)?))
+	}
+
+	fn func_decl(&mut self, public: bool, identifier: &Node, params: &Vec<(Node, Node)>, return_type: &Option<Node>, body: &Option<Vec<Node>>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		match return_type {
-			Some(return_type) => write!(&mut res, "{} ", return_type).unwrap(),
+			Some(return_type) => write!(&mut res, "{} ", self.eval(return_type)?).unwrap(),
 			None => res.push_str("void ")
 		}
 
-		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, identifier).unwrap();
+		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, self.eval(identifier)?).unwrap();
 
 		if !params.is_empty() {
-			for node in params {
-				if let Node::MembDecl { identifier, param_type } = node {
-					write!(&mut res, "{} {}, ", param_type, identifier).unwrap();
-				}
+			for (identifier, var_type) in params {
+				write!(&mut res, "{} {}, ", self.eval(var_type)?, self.eval(identifier)?).unwrap();
 			}
 
 			res.truncate(res.len() - 2);
@@ -160,15 +167,15 @@ impl Compiler {
 		res.push(')');
 		
 		if let Some(body) = body {
-			let node_signature = Node::FuncDecl { public, identifier: identifier.to_owned(), params: params.to_vec(), return_type: return_type.to_owned(), body: None };
-			let node_signature_string = self.translate_ast(&node_signature)?;
+			let node_signature = Node::FuncDecl { public, identifier: Box::new(identifier.to_owned()), params: params.to_vec(), return_type: Box::new(return_type.to_owned()), body: None };
+			let node_signature_string = self.eval(&node_signature)?;
 
 			self.func_protos.push(node_signature_string);
 
 			res.push('{');
 
 			for node in body {
-				res.push_str(&self.translate_ast(node)?);
+				res.push_str(&self.eval(node)?);
 			}
 
 			res.push('}');
@@ -183,54 +190,31 @@ impl Compiler {
 		Ok(res)
 	}
 
-	fn var_decl(&mut self, public: bool, global: bool, identifier: &str, var_type: &str, value: &Option<Node>) -> Result<String, Feedback> {
+	fn var_decl(&mut self, public: bool, global: bool, identifier: &Node, var_type: &Node, value: &Option<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		if global && !public {
 			res.push_str("static ");
 		}
 		
-		write!(res, "{} ", var_type).unwrap();
+		write!(res, "{} ", self.eval(var_type)?).unwrap();
 
 		match value {
-			Some(value) => {
-				let value = match self.expr(value) {
-					Ok(x) => x,
-					Err(e) => return Err(e)
-				};
-
-				write!(&mut res, "{}={};", identifier, value).unwrap();
-			}
-			None => write!(&mut res, "{};", identifier).unwrap()
+			Some(value) => write!(&mut res, "{}={};", self.eval(identifier)?, self.eval(value)?).unwrap(),
+			None => write!(&mut res, "{};", self.eval(identifier)?).unwrap()
 		}
 
 		Ok(res)
 	}
 
-	fn expr(&mut self, node: &Node) -> Result<String, Feedback> {
-		match node {
-			Node::Literal(value) => Ok(value.to_owned()),
-			_ => todo!()
-		}
+	fn assignment(&mut self, identifier: &Node, operator: &Node, value: &Node) -> Result<String, Feedback> {
+		Ok(format!("{}{}{};", self.eval(identifier)?, self.eval(operator)?, self.eval(value)?))
 	}
 
-	fn assignment(&mut self, identifier: &str, operator: &str, value: &Node) -> Result<String, Feedback> {
+	fn func_call(&mut self, identifier: &Node, params: &Vec<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		let value = match self.expr(value) {
-			Ok(x) => x,
-			Err(e) => return Err(e)
-		};
-
-		write!(res, "{}{}{};", identifier, operator, value).unwrap();
-
-		Ok(res)
-	}
-
-	fn func_call(&mut self, identifier: &str, params: &Vec<Node>) -> Result<String, Feedback> {
-		let mut res = String::new();
-
-		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, identifier).unwrap();
+		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, self.eval(identifier)?).unwrap();
 
 		if !params.is_empty() {
 			for node in params {
@@ -250,15 +234,10 @@ impl Compiler {
 	fn if_statement(&mut self, condition: &Node, body: &Vec<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		let condition = match self.expr(condition) {
-			Ok(x) => x,
-			Err(e) => return Err(e)
-		};
-
-		write!(&mut res, "if({}){{", condition).unwrap();
+		write!(&mut res, "if({}){{", self.eval(condition)?).unwrap();
 
 		for node in body {
-			res.push_str(&self.translate_ast(node)?);
+			res.push_str(&self.eval(node)?);
 		}
 
 		res.push('}');

@@ -109,7 +109,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	let identifier = match current_token.token_type() {
-		TokenType::Identifier => current_token.symbol().to_owned(),
+		TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
 		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
@@ -142,10 +142,13 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 			loop {
 				parser.skip_new_lines();
 
-				match memb_decl(parser) {
-					Ok(param) => params.push(param),
-					Err(e) => return Err(e) 
-				}
+				let (identifier, var_type) = var_def(parser)?;
+				let var_type = match var_type {
+					Some(x) => x,
+					None => return Err(Error::expected(current_token.pos(), "'Type'", Some(&format!("'{}'", current_token.symbol()))))
+				};
+
+				params.push((identifier, var_type));
 	
 				parser.advance();
 				parser.skip_new_lines();
@@ -179,7 +182,10 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 			parser.advance();
 
 			match current_token.token_type() {
-				TokenType::Identifier => Some(current_token.symbol().to_owned()),
+				TokenType::Identifier => {
+					let return_type = Node::Identifier(current_token.symbol().to_owned());
+					Some(return_type)
+				},
 				_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 			}
 		}
@@ -193,7 +199,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "token", None))
 	};
 
-	let mut func_decl = Node::FuncDecl { public, identifier, params, return_type, body: None };
+	let mut func_decl = Node::FuncDecl { public, identifier: Box::new(identifier), params, return_type: Box::new(return_type), body: None };
 
 	match current_token.token_type() {
 		TokenType::Separator if current_token.symbol() == "{" => {
@@ -204,10 +210,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 
 			*parser.parent_node_mut() = func_decl.clone();
 
-			let func_body = match parser.statements() {
-				Ok(x) => x,
-				Err(e) => return Err(e)
-			};
+			let func_body = parser.statements()?;
 
 			*parser.parent_node_mut() = parent_node;
 
@@ -233,27 +236,14 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	Ok(func_decl)
 }
 
-/// Creates a `Node::VarDecl`.
-pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
-	let mut public = false;
-	let mut global = false;
-
-	if let Node::Program { .. } = parser.parent_node() {
-		if parser.next_pub().is_some() {
-			*parser.next_pub_mut() = None;
-			public = true;
-		}
-
-		global = true;
-	}
-
+pub fn var_def(parser: &mut Parser) -> Result<(Node, Option<Node>), Feedback> {
 	let mut current_token = match parser.advance() {
 		Some(x) => x.clone(),
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
 	};
 
 	let identifier = match current_token.token_type() {
-		TokenType::Identifier => current_token.symbol().to_owned(),
+		TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
 		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
@@ -273,11 +263,40 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	let var_type = match current_token.token_type() {
-		TokenType::Identifier => current_token.symbol().to_owned(),
-		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
+		TokenType::Identifier => Some(Node::Identifier(current_token.symbol().to_owned())),
+		_ => None
 	};
 
-	let mut var_decl = Node::VarDecl { identifier, var_type, value: None, public, global };
+	return Ok((identifier, var_type))
+}
+
+/// Creates a `Node::VarDecl`.
+pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
+	let mut public = false;
+	let mut global = false;
+
+	if let Node::Program { .. } = parser.parent_node() {
+		if parser.next_pub().is_some() {
+			*parser.next_pub_mut() = None;
+			public = true;
+		}
+
+		global = true;
+	}
+
+	let (identifier, var_type) = var_def(parser)?;
+
+	let mut current_token = match parser.current_token() {
+		Some(x) => x.clone(),
+		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+	};
+
+	let var_type = match var_type {
+		Some(x) => x,
+		None => return Err(Error::expected(current_token.pos(), "'Type'", Some(&format!("'{}'", current_token.symbol()))))
+	};
+
+	let mut var_decl = Node::VarDecl { identifier: Box::new(identifier), var_type: Box::new(var_type), value: Box::new(None), public, global };
 
 	current_token = match parser.advance() {
 		Some(x) => x.clone(),
@@ -289,10 +308,7 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 			parser.advance();
 
 			if let Node::VarDecl { value, .. } = &mut var_decl {
-				*value = match expr(parser) {
-					Ok(x) => Some(Box::new(x)),
-					Err(e) => return Err(e)
-				};
+				*value = Box::new(Some(expr(parser)?));
 			}
 		}
 		_ => ()
@@ -302,6 +318,7 @@ pub fn var_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 }
 
 /// Creates a `Node::MembDecl`.
+/*
 pub fn memb_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut current_token = match parser.current_token() {
 		Some(x) => x.clone(),
@@ -335,7 +352,7 @@ pub fn memb_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 
 	Ok(Node::MembDecl { identifier, param_type })
 }
-
+*/
 pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut current_token = match parser.current_token() {
 		Some(x) => x.clone(),
@@ -343,7 +360,7 @@ pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	let identifier = match current_token.token_type() {
-		TokenType::Identifier => current_token.symbol().to_owned(),
+		TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
 		_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
@@ -358,20 +375,17 @@ pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 		_ => return Err(Error::expected(current_token.pos(), "'(' or '='", Some(&format!("'{}'", current_token.symbol()))))
 	}
 
-	let operator = current_token.symbol().to_owned();
+	let operator = Node::Operator(current_token.symbol().to_owned());
 
 	parser.advance();
 
-	let value = match expr(parser) {
-		Ok(x) => x,
-		Err(e) => return Err(e)
-	};
+	let value = expr(parser)?;
 
-	Ok(Node::Assignment { identifier, operator, value: Box::new(value) })
+	Ok(Node::Assignment { identifier: Box::new(identifier), operator: Box::new(operator), value: Box::new(value) })
 }
 
 /// Creates a `Node::FuncCall`.
-pub fn func_call(parser: &mut Parser, identifier: &str) -> Result<Node, Feedback> {
+pub fn func_call(parser: &mut Parser, identifier: &Node) -> Result<Node, Feedback> {
 	let mut current_token = match parser.advance() {
 		Some(x) => x.clone(),
 		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
@@ -409,7 +423,7 @@ pub fn func_call(parser: &mut Parser, identifier: &str) -> Result<Node, Feedback
 
 	parser.advance();
 
-	Ok(Node::FuncCall { identifier: identifier.to_owned(), params })
+	Ok(Node::FuncCall { identifier: Box::new(identifier.clone()), params })
 }
 
 pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
@@ -422,10 +436,7 @@ pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 		return Err(Error::expected(current_token.pos(), "(", Some(&format!("'{}'", current_token.symbol()))));
 	}
 
-	let condition = match expr(parser) {
-		Ok(x) => x,
-		Err(e) => return Err(e)
-	};
+	let condition = expr(parser)?;
 
 	parser.advance();
 	parser.skip_new_lines();
@@ -448,10 +459,7 @@ pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 
 	*parser.parent_node_mut() = if_statement.clone();
 
-	let if_body = match parser.statements() {
-		Ok(x) => x,
-		Err(e) => return Err(e)
-	};
+	let if_body = parser.statements()?;
 
 	*parser.parent_node_mut() = parent_node;
 

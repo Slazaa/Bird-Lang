@@ -7,14 +7,15 @@ use crate::bird::parser::statement::*;
 pub enum Node {
 	Literal(String),
 	Identifier(String),
+	Operator(String),
 	Program { body: Vec<Node> },
-	UnaryExpr { operator: String, node: Box<Node> },
-	BinExpr { operator: String, left: Box<Node>, right: Box<Node> },
-	FuncDecl { public: bool, identifier: String, params: Vec<Node>, return_type: Option<String>, body: Option<Vec<Node>> },
-	MembDecl { identifier: String, param_type: String },
-	VarDecl { public: bool, global: bool, identifier: String, var_type: String, value: Option<Box<Node>>, },
-	Assignment { identifier: String, operator: String, value: Box<Node> },
-	FuncCall { identifier: String, params: Vec<Node> },
+	UnaryExpr { operator: Box<Node>, node: Box<Node> },
+	BinExpr { operator: Box<Node>, left: Box<Node>, right: Box<Node> },
+	FuncDecl { public: bool, identifier: Box<Node>, params: Vec<(Node, Node)>, return_type: Box<Option<Node>>, body: Option<Vec<Node>> },
+	//MembDecl { identifier: String, param_type: String },
+	VarDecl { public: bool, global: bool, identifier: Box<Node>, var_type: Box<Node>, value: Box<Option<Node>>, },
+	Assignment { identifier: Box<Node>, operator: Box<Node>, value: Box<Node> },
+	FuncCall { identifier: Box<Node>, params: Vec<Node> },
 	IfStatement { condition: Box<Node>, body: Vec<Node> }
 }
 
@@ -42,10 +43,7 @@ impl Parser {
 
 		parser.advance();
 
-		let statements = match parser.statements() {
-			Ok(x) => x,
-			Err(e) => return Err(e)
-		};
+		let statements = parser.statements()?;
 
 		if let Node::Program { body } = &mut parser.parent_node {
 			*body = statements;
@@ -142,10 +140,7 @@ impl Parser {
 				_ => ()
 			}
 
-			let statement = match statement(self) { 
-				Ok(x) => x,
-				Err(e) => return Err(e)
-			};
+			let statement = statement(self)?;
 
 			if let Some(next_pub) = &self.next_pub {
 				return Err(Error::expected(next_pub.pos(), "item", None));

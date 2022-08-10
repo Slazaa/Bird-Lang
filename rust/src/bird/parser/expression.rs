@@ -40,7 +40,8 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 		TokenType::Operator if "+-".contains(current_token.symbol()) => {
 			parser.advance();
 			let factor = factor(parser)?;
-			return Ok(Node::UnaryExpr { operator: current_token.symbol().to_owned(), node: Box::new(factor) });
+			let operator = Node::Operator(current_token.symbol().to_owned());
+			return Ok(Node::UnaryExpr { operator: Box::new(operator), node: Box::new(factor) });
 		}
 		TokenType::Separator if "(".contains(current_token.symbol()) => {
 			parser.advance();
@@ -103,14 +104,14 @@ pub fn binary_op(parser: &mut Parser, first_func: NodeFunc, second_func: Option<
 				return Err(Error::invalid_syntax(Some(token.pos()), "Invalid operator"))
 			}
 
-			let operator = token.symbol().to_owned();
+			let operator = Node::Operator(token.symbol().to_owned());
 
 			parser.advance();
 
 			let old_left = left;
 			let right = second_func(parser)?;
 
-			left = Node::BinExpr { operator, left: Box::new(old_left), right: Box::new(right) };
+			left = Node::BinExpr { operator: Box::new(operator), left: Box::new(old_left), right: Box::new(right) };
 		}
 	}
 
