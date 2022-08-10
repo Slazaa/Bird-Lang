@@ -5,18 +5,28 @@ use crate::bird::parser::statement::*;
 /// This enum defines the nodes of the AST.
 #[derive(Clone, Debug)]
 pub enum Node {
+	// ----------
 	Literal(String),
 	Identifier(String),
 	Operator(String),
+	// ----------
 	Program { body: Vec<Node> },
+	// Expressions
 	UnaryExpr { operator: Box<Node>, node: Box<Node> },
 	BinExpr { operator: Box<Node>, left: Box<Node>, right: Box<Node> },
+	// Declarations
 	FuncDecl { public: bool, identifier: Box<Node>, params: Vec<(Node, Node)>, return_type: Box<Option<Node>>, body: Option<Vec<Node>> },
-	//MembDecl { identifier: String, param_type: String },
 	VarDecl { public: bool, global: bool, identifier: Box<Node>, var_type: Box<Node>, value: Box<Option<Node>>, },
+	// ----------
 	Assignment { identifier: Box<Node>, operator: Box<Node>, value: Box<Node> },
+	// ----------
 	FuncCall { identifier: Box<Node>, params: Vec<Node> },
-	IfStatement { condition: Box<Node>, body: Vec<Node> }
+	// Statements
+	IfStatement { condition: Box<Node>, body: Vec<Node> },
+	// Types
+	Type { identifier: Box<Node> },
+	TypeArray { hold_type: Box<Node>, size: Box<Node> },
+	TypePtr { identifier: Box<Node>, mutable: bool }
 }
 
 /// The `Parser` generates an AST from a `Token` list.

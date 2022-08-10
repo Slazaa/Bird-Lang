@@ -25,7 +25,7 @@ pub fn term(parser: &mut Parser) -> Result<Node, Feedback> {
 pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut current_token = match parser.current_token() {
 		Some(x) => x.clone(),
-		None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
+		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "token", None))
 	};
 
 	match current_token.token_type() {
@@ -47,21 +47,19 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 			parser.advance();
 			let expr = expr(parser)?;
 
-			current_token = match parser.current_token() {
-				Some(x) => x.clone(),
-				None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
-			};
+			current_token = parser.current_token()
+				.ok_or(Error::expected(current_token.pos(), "token", Some(&format!("'{}'", current_token.symbol()))))?
+				.clone();
 
 			if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
 				parser.advance();
 				return Ok(expr);
 			} else {
-				current_token = match parser.current_token() {
-					Some(x) => x.clone(),
-					None => return Err(Error::invalid_syntax(None, "Invalid syntax"))
-				};
+				current_token = parser.current_token()
+					.ok_or(Error::expected(current_token.pos(), "')'", None))?
+					.clone();
 
-				return Err(Error::invalid_syntax(Some(current_token.pos()), "Expected ')'"));
+				return Err(Error::expected(current_token.pos(), "')'", Some(&format!("'{}'", current_token.symbol()))));
 			}
 		}
 		_ => ()

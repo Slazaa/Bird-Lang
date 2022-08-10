@@ -1,3 +1,6 @@
+pub mod array;
+pub mod types;
+
 use std::fs::OpenOptions;
 use std::fs::{self, File};
 use std::path::Path;
@@ -8,49 +11,8 @@ use crate::bird::constants::compile;
 use crate::bird::feedback::*;
 use crate::bird::parser::*;
 
-static OUTPUT_FOLDER: &str = "c_output";
+pub static OUTPUT_FOLDER: &str = "c_output";
 
-fn types_file() -> Result<(), Feedback> {
-	if !Path::new(&format!("{}/bird", OUTPUT_FOLDER)).exists() && fs::create_dir(&format!("{}/bird", OUTPUT_FOLDER)).is_err() {
-		return Err(Error::unspecified(&format!("Failed creating '{}/bird' directory", OUTPUT_FOLDER)));
-	}
-
-	let mut types_file = match OpenOptions::new()
-		.write(true)
-		.truncate(true)
-		.create(true)
-		.open(&format!("{}/bird/types.h", OUTPUT_FOLDER))
-	{
-		Ok(x) => x,
-		Err(_) => return Err(Error::unspecified("Failed creating 'bird/types.h' file")) 
-	};
-
-	if write!(types_file, "\
-#ifndef BIRD_TYPES_H
-#define BIRD_TYPES_H
-
-typedef enum {{ false, true }} bool;
-
-typedef char int8;
-typedef short int16;
-typedef long int32;
-typedef long long int64;
-
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef unsigned long uint32;
-typedef unsigned long long uint64;
-
-typedef float float32;
-typedef double float64;
-
-#endif\
-		").is_err() {
-			return Err(Error::unspecified("Failed writing to 'bird/types.h' file"));
-		}
-
-	Ok(())
-}
 pub struct Compiler {
 	main_file: File,
 	func_protos: Vec<String>
@@ -72,10 +34,6 @@ impl Compiler {
 			Err(_) => return Err(Error::unspecified("Failed creating 'main.c' file")) 
 		};
 
-		if let Err(e) = types_file() {
-			return Err(e);
-		}
-
 		let mut compiler = Self {
 			main_file,
 			func_protos: Vec::new()
@@ -85,22 +43,15 @@ impl Compiler {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
-		match compiler.eval(&ast) {
-			Ok(res) => {
-				for proto in compiler.func_protos {
-					if write!(compiler.main_file, "{}", proto).is_err() {
-						return Err(Error::unspecified("Failed writing to 'main.c' file"));
-					}
-				}
+		let result = compiler.eval(&ast)?;
 
-				if write!(compiler.main_file, "{}", res).is_err() {
-					return Err(Error::unspecified("Failed writing to 'main.c' file"));
-				}
+		for proto in compiler.func_protos {
+			if write!(compiler.main_file, "{}", proto).is_err() {
+				return Err(Error::unspecified("Failed writing to 'main.c' file"));
 			}
-			Err(e) => return Err(e)
 		}
 
-		if write!(compiler.main_file, "int main(int argc, char** argv){{{}main();return 0;}}", compile::FUNC_PREFIX).is_err() {
+		if write!(compiler.main_file, "{}int main(int argc, char** argv){{{}main();return 0;}}", result, compile::FUNC_PREFIX).is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
@@ -119,7 +70,10 @@ impl Compiler {
 			Node::VarDecl { public, global, identifier, var_type, value } => self.var_decl(*public, *global, identifier, var_type, value),
 			Node::Assignment { identifier, operator, value } => self.assignment(identifier, operator, &*value),
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
-			Node::IfStatement { condition, body } => self.if_statement(&*condition, body)
+			Node::IfStatement { condition, body } => self.if_statement(condition, body),
+			Node::Type { identifier } => self.type_node(identifier),
+			Node::TypeArray { hold_type, size } => todo!(),
+			Node::TypePtr { identifier, mutable } => todo!()
 		}
 	}
 
@@ -152,7 +106,7 @@ impl Compiler {
 			None => res.push_str("void ")
 		}
 
-		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, self.eval(identifier)?).unwrap();
+		write!(&mut res, "{}(", self.eval(identifier)?).unwrap();
 
 		if !params.is_empty() {
 			for (identifier, var_type) in params {
@@ -214,7 +168,7 @@ impl Compiler {
 	fn func_call(&mut self, identifier: &Node, params: &Vec<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		write!(&mut res, "{}{}(", compile::FUNC_PREFIX, self.eval(identifier)?).unwrap();
+		write!(&mut res, "{}(", self.eval(identifier)?).unwrap();
 
 		if !params.is_empty() {
 			for node in params {
@@ -243,5 +197,9 @@ impl Compiler {
 		res.push('}');
 
 		Ok(res)
+	}
+
+	fn type_node(&mut self, identifier: &Node) -> Result<String, Feedback> {
+		self.eval(identifier)
 	}
 }
