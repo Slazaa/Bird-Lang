@@ -1,11 +1,11 @@
-use std::fs;
+use std::path::{Path, PathBuf};
 
 use super::feedback::*;
 use super::constants::*;
 
 /// `TokenType`s are constituent of `Token`s
 /// so they can be differentiated easily.
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum TokenType {
 	Literal,
 	Operator,
@@ -14,24 +14,30 @@ pub enum TokenType {
 	Identifier
 }
 
+#[derive(Clone, Debug)]
+pub enum PathOrText {
+	Path(PathBuf),
+	Text(String)
+}
+
 /// `Position`s keep track of the different `Token`s
 /// so they can be identified easily.
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct Position {
 	index: i32,
 	line: i32,
 	colomn: i32,
-	filename: String
+	path_or_text: PathOrText
 }
 
 impl Position {
 	/// Constructs a new `Position`.
-	pub fn new(index: i32, line: i32, colomn: i32, filename: &str) -> Self {
+	pub fn new(index: i32, line: i32, colomn: i32, path_or_text: PathOrText) -> Self {
 		Self {
 			index,
 			line,
 			colomn,
-			filename: filename.to_owned()
+			path_or_text
 		}
 	}
 
@@ -55,9 +61,9 @@ impl Position {
 		&mut self.colomn
 	}
 
-	/// Returns the filename the `Position` is tracking.
-	pub fn filname(&self) -> &str {
-		self.filename.as_str()
+	/// Returns the filename or the text the `Position` is tracking.
+	pub fn file_or_text(&self) -> &PathOrText {
+		&self.path_or_text
 	}
 
 	/// Increments the `Position` index and the collumn and
@@ -125,15 +131,15 @@ pub struct Lexer {
 impl Lexer {
 	/// Parse the code and return a `Vec` of `Token` if the code respects the lexing rules,
 	/// else return a `Feedback`.
-	pub fn parse(filename: &str) -> Result<Vec<Token>, Feedback> {
-		let text = match fs::read_to_string(filename) {
-			Ok(x) => x,
-			Err(_) => return Err(Error::no_file_or_dir(filename))
+	pub fn parse(text: &str, file_path: Option<&Path>) -> Result<Vec<Token>, Feedback> {
+		let file_or_text = match file_path {
+			Some(file_path) => PathOrText::Path(file_path.to_path_buf()),
+			None => PathOrText::Text(text.to_owned())
 		};
 
 		let mut lexer = Self {
-			text,
-			pos: Position::new(-1, 0, -1, filename),
+			text: text.to_owned(),
+			pos: Position::new(-1, 0, -1, file_or_text),
 			current_char: None
 		};
 

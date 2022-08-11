@@ -70,6 +70,15 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 				_ => return Err(Error::expected(current_token.pos(), "literal", Some(&format!("'{}'", current_token.symbol()))))
 			};
 
+			current_token = parser.advance()
+				.ok_or(Error::expected(current_token.pos(), "']'", None))?
+				.clone();
+
+			match current_token.token_type() {
+				TokenType::Separator if current_token.symbol() == "]" => (),
+				_ => return Err(Error::expected(current_token.pos(), "']'", Some(&format!("'{}'", current_token.symbol()))))
+			}
+
 			Ok(Node::TypeArray { hold_type: Box::new(hold_type), size: Box::new(size) })
 		}
 		_ => Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))

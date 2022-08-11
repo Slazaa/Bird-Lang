@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Write};
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
-use super::lexer::Position;
+use super::lexer::{Position, PathOrText};
 
 pub enum FeedbackType {
 	Error
@@ -37,7 +37,11 @@ impl Feedback {
 		let mut result = String::new();
 
 		let line_string = format!("{}", pos_start.line() + 1);
-		write!(result, "\n  --> {}:{}:{}", pos_start.filname(), line_string, pos_start.colomn() + 1).unwrap();
+		
+		match pos_start.file_or_text() {
+			PathOrText::Path(file_path) => write!(result, "\n  --> {}:{}:{}", file_path.display(), line_string, pos_start.colomn() + 1).unwrap(),
+			_ => ()
+		}
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ')
 			.collect();
@@ -48,13 +52,21 @@ impl Feedback {
 		pipe_line.insert_str(0, &line_string);
 
 		let mut pipe_down = pipe.clone();
-		let file = File::open(pos_start.filname()).unwrap();
-		let reader = BufReader::new(file);
+		
+		let line_text = match pos_start.file_or_text() {
+			PathOrText::Path(file_path) => {
+				let file = File::open(file_path).unwrap();
+				let reader = BufReader::new(file);
 
-		let line_text = reader.lines()
-			.nth(pos_start.line() as usize)
-			.unwrap()
-			.unwrap();
+				reader.lines()
+					.nth(pos_start.line() as usize)
+					.unwrap()
+					.unwrap()
+			}
+			PathOrText::Text(_) => {
+				todo!();
+			}
+		};
 
 		for i in 0..pos_start.colomn() {
 			match line_text.chars().nth(i as usize) {
@@ -115,10 +127,6 @@ impl Error {
 	
 	pub fn invalid_syntax(position: Option<(&Position, &Position)>, description: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, position, description)
-	}
-
-	pub fn no_input_file() -> Feedback {
-		Feedback::new(FeedbackType::Error, None, "No input file")
 	}
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {

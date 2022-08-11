@@ -10,8 +10,9 @@ use std::fmt::Write as _;
 use crate::bird::constants::compile;
 use crate::bird::feedback::*;
 use crate::bird::parser::*;
+use crate::bird::SRC_FOLDER;
 
-pub static OUTPUT_FOLDER: &str = "c_output";
+pub static OUTPUT_FOLDER: &str = "c";
 
 pub struct Compiler {
 	main_file: File,
@@ -19,16 +20,33 @@ pub struct Compiler {
 }
 
 impl Compiler {
-	pub fn compile(ast: Node) -> Result<(), Feedback> {
-		if !Path::new(OUTPUT_FOLDER).exists() && fs::create_dir(OUTPUT_FOLDER).is_err() {
-			return Err(Error::unspecified(&format!("Failed creating '{}' directory", OUTPUT_FOLDER)));
+	pub fn compile(ast: &Node, file_path: &Path) -> Result<(), Feedback> {
+		let mut output = file_path.to_path_buf();
+		let parent_folder = output.parent()
+			.ok_or(Error::invalid_syntax(None, "Invalid path"))?;
+
+		if parent_folder.to_str().unwrap() == SRC_FOLDER {
+			let filename = file_path.file_name().unwrap().to_str().unwrap();
+			output = Path::new(filename).to_path_buf();
+		}
+
+		output = Path::new(OUTPUT_FOLDER).join(output);
+		output.set_extension("c");
+
+		{
+			let parent_folder = output.parent()
+				.ok_or(Error::invalid_syntax(None, "Invalid path"))?;
+
+			if !Path::new(parent_folder).exists() && fs::create_dir_all(parent_folder).is_err() {
+				return Err(Error::unspecified(&format!("Failed creating '{}' directory", parent_folder.display())));
+			}
 		}
 
 		let main_file = match OpenOptions::new()
 			.write(true)
 			.truncate(true)
 			.create(true)
-			.open(&format!("{}/main.c", OUTPUT_FOLDER))
+			.open(output)
 		{
 			Ok(x) => x,
 			Err(_) => return Err(Error::unspecified("Failed creating 'main.c' file")) 
@@ -72,8 +90,7 @@ impl Compiler {
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
 			Node::IfStatement { condition, body } => self.if_statement(condition, body),
 			Node::Type { identifier } => self.type_node(identifier),
-			Node::TypeArray { hold_type, size } => todo!(),
-			Node::TypePtr { identifier, mutable } => todo!()
+			_ => todo!()
 		}
 	}
 
@@ -151,11 +168,13 @@ impl Compiler {
 			res.push_str("static ");
 		}
 		
-		write!(res, "{} ", self.eval(var_type)?).unwrap();
+		match var_type {
+			Node::TypeArray { hold_type, size } => write!(res, "{} {}[{}];", self.eval(hold_type)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
+			_ => write!(res, "{} {};", self.eval(var_type)?, self.eval(identifier)?).unwrap()
+		}
 
-		match value {
-			Some(value) => write!(&mut res, "{}={};", self.eval(identifier)?, self.eval(value)?).unwrap(),
-			None => write!(&mut res, "{};", self.eval(identifier)?).unwrap()
+		if let Some(value) = value {
+			write!(&mut res, "={};", self.eval(value)?).unwrap();
 		}
 
 		Ok(res)
