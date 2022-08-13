@@ -32,7 +32,7 @@ pub fn to_c() -> Result<(), Feedback> {
 		filename_to_c(file.path())?;
 	}
 
-	text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
+	//text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
 
 	c::types::types_file()?;
 
@@ -52,8 +52,8 @@ fn text_to_c(text: &str, path_or_file: PathOrFile) -> Result<(), Feedback> {
 	use self::compile::c;
 	
 	let tokens = match &path_or_file {
-		PathOrFile::Path(path) => Lexer::parse(&text, Some(&path))?,
-		PathOrFile::Filename(_) => Lexer::parse(&text, None)?
+		PathOrFile::Path(path) => Lexer::parse(text, Some(path))?,
+		PathOrFile::Filename(_) => Lexer::parse(text, None)?
 	};
 
 	let ast = Parser::parse(&tokens)?;

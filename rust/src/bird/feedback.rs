@@ -37,10 +37,9 @@ impl Feedback {
 		let mut result = String::new();
 
 		let line_string = format!("{}", pos_start.line() + 1);
-		
-		match pos_start.file_or_text() {
-			PathOrText::Path(file_path) => write!(result, "\n  --> {}:{}:{}", file_path.display(), line_string, pos_start.colomn() + 1).unwrap(),
-			_ => ()
+
+		if let PathOrText::Path(file_path) = pos_start.file_or_text() {
+			write!(result, "\n  --> {}:{}:{}", file_path.display(), line_string, pos_start.colomn() + 1).unwrap();
 		}
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ')

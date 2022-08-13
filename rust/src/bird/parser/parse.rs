@@ -25,8 +25,8 @@ pub enum Node {
 	IfStatement { condition: Box<Node>, body: Vec<Node> },
 	// Types
 	Type { identifier: Box<Node> },
-	TypeArray { hold_type: Box<Node>, size: Box<Node> }
-	//TypePtr { identifier: Box<Node>, mutable: bool }
+	TypeArray { identifier: Box<Node>, size: Box<Node> },
+	TypePtr { identifier: Box<Node>, mutable: bool }
 }
 
 /// The `Parser` generates an AST from a `Token` list.

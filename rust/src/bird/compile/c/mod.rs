@@ -23,7 +23,7 @@ impl Compiler {
 	pub fn compile(ast: &Node, file_path: &Path) -> Result<(), Feedback> {
 		let mut output = file_path.to_path_buf();
 		let parent_folder = output.parent()
-			.ok_or(Error::invalid_syntax(None, "Invalid path"))?;
+			.ok_or_else(|| Error::invalid_syntax(None, "Invalid path"))?;
 
 		if parent_folder.to_str().unwrap() == SRC_FOLDER {
 			let filename = file_path.file_name().unwrap().to_str().unwrap();
@@ -35,7 +35,7 @@ impl Compiler {
 
 		{
 			let parent_folder = output.parent()
-				.ok_or(Error::invalid_syntax(None, "Invalid path"))?;
+				.ok_or_else(|| Error::invalid_syntax(None, "Invalid path"))?;
 
 			if !Path::new(parent_folder).exists() && fs::create_dir_all(parent_folder).is_err() {
 				return Err(Error::unspecified(&format!("Failed creating '{}' directory", parent_folder.display())));
@@ -61,7 +61,7 @@ impl Compiler {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
-		let result = compiler.eval(&ast)?;
+		let result = compiler.eval(ast)?;
 
 		for proto in compiler.func_protos {
 			if write!(compiler.main_file, "{}", proto).is_err() {
@@ -81,7 +81,7 @@ impl Compiler {
 			Node::Literal(value) => Ok(value.to_owned()),
 			Node::Identifier(value) => Ok(value.to_owned()),
 			Node::Operator(value) => Ok(value.to_owned()),
-			Node::Program { .. } => self.program(node),
+			Node::Program { body } => self.program(body),
 			Node::UnaryExpr { operator, node } => self.unary_expr(operator, node),
 			Node::BinExpr { operator, left, right } => self.bin_expr(operator, left, right),
 			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body),
@@ -90,18 +90,17 @@ impl Compiler {
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
 			Node::IfStatement { condition, body } => self.if_statement(condition, body),
 			Node::Type { identifier } => self.type_node(identifier),
+			Node::TypePtr { identifier, mutable } => self.type_ptr_node(identifier, *mutable),
 			_ => todo!()
 		}
 	}
 
-	fn program(&mut self, node: &Node) -> Result<String, Feedback> {
+	fn program(&mut self, body: &Vec<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
-		if let Node::Program { body } = node {
-			for node in body {
-				let translated_node = self.eval(node)?;
-				res.push_str(&translated_node);
-			}
+		for node in body {
+			let translated_node = self.eval(node)?;
+			res.push_str(&translated_node);
 		}
 
 		Ok(res)
@@ -169,7 +168,7 @@ impl Compiler {
 		}
 		
 		match var_type {
-			Node::TypeArray { hold_type, size } => write!(res, "{} {}[{}];", self.eval(hold_type)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
+			Node::TypeArray { identifier, size } => write!(res, "{} {}[{}];", self.eval(identifier)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
 			_ => write!(res, "{} {};", self.eval(var_type)?, self.eval(identifier)?).unwrap()
 		}
 
@@ -220,5 +219,12 @@ impl Compiler {
 
 	fn type_node(&mut self, identifier: &Node) -> Result<String, Feedback> {
 		self.eval(identifier)
+	}
+
+	fn type_ptr_node(&mut self, identifier: &Node, mutable: bool) -> Result<String, Feedback> {
+		match mutable {
+			true => Ok(format!("{}*", self.eval(identifier)?)),
+			false => Ok(format!("const {}*", self.eval(identifier)?))
+		}
 	}
 }

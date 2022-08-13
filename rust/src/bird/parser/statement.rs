@@ -42,18 +42,42 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 
 	match current_token.token_type() {
 		TokenType::Identifier => Ok(Node::Type { identifier: Box::new(Node::Identifier(current_token.symbol().to_owned())) }),
-		TokenType::Separator if current_token.symbol() == "[" => {
+		TokenType::Operator if current_token.symbol() == "*" => {
 			current_token = parser.advance()
-				.ok_or(Error::expected(current_token.pos(), "type", None))?
+				.ok_or_else(|| Error::expected(current_token.pos(), "type", None))?
 				.clone();
 
-			let hold_type = match current_token.token_type() {
+			let mutable = match current_token.token_type() {
+				TokenType::Keyword if current_token.symbol() == "mut" => {
+					parser.advance();
+					true
+				},
+				_ => false
+			};
+
+			current_token = parser.current_token()
+				.ok_or_else(|| Error::expected(current_token.pos(), "type", None))?
+				.clone();
+
+			let identifier = match current_token.token_type() {
+				TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
+				_ => return Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))
+			};
+
+			Ok(Node::TypePtr { identifier: Box::new(identifier), mutable })
+		}
+		TokenType::Separator if current_token.symbol() == "[" => {
+			current_token = parser.advance()
+				.ok_or_else(|| Error::expected(current_token.pos(), "type", None))?
+				.clone();
+
+			let identifier = match current_token.token_type() {
 				TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
 				_ => return Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))
 			};
 
 			current_token = parser.advance()
-				.ok_or(Error::expected(current_token.pos(), "','", None))?
+				.ok_or_else(|| Error::expected(current_token.pos(), "','", None))?
 				.clone();
 
 			match current_token.token_type() {
@@ -62,7 +86,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 			}
 
 			current_token = parser.advance()
-				.ok_or(Error::expected(current_token.pos(), "literal", None))?
+				.ok_or_else(|| Error::expected(current_token.pos(), "literal", None))?
 				.clone();
 
 			let size = match current_token.token_type() {
@@ -71,7 +95,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 			};
 
 			current_token = parser.advance()
-				.ok_or(Error::expected(current_token.pos(), "']'", None))?
+				.ok_or_else(|| Error::expected(current_token.pos(), "']'", None))?
 				.clone();
 
 			match current_token.token_type() {
@@ -79,7 +103,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 				_ => return Err(Error::expected(current_token.pos(), "']'", Some(&format!("'{}'", current_token.symbol()))))
 			}
 
-			Ok(Node::TypeArray { hold_type: Box::new(hold_type), size: Box::new(size) })
+			Ok(Node::TypeArray { identifier: Box::new(identifier), size: Box::new(size) })
 		}
 		_ => Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))
 	}
@@ -176,7 +200,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	parser.skip_new_lines();
 
 	current_token = parser.current_token()
-		.ok_or(Error::expected(current_token.pos(), "'('", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "'('", None))?
 		.clone();
 
 	match current_token.token_type() {
@@ -190,7 +214,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	let mut params = Vec::new();
 
 	current_token = parser.current_token()
-		.ok_or(Error::expected(current_token.pos(), "argument or '('", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "argument or '('", None))?
 		.clone();
 
 	match current_token.token_type() {
@@ -202,7 +226,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 				let (identifier, var_type) = var_def(parser)?;
 
 				current_token = parser.advance()
-					.ok_or(Error::expected(current_token.pos(), "type", None))?
+					.ok_or_else(|| Error::expected(current_token.pos(), "type", None))?
 					.clone();
 
 				let var_type = match var_type {
@@ -216,7 +240,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 				parser.skip_new_lines();
 
 				current_token = parser.current_token()
-					.ok_or(Error::expected(current_token.pos(), "',' or ')'", None))?
+					.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
 					.clone();
 	
 				match current_token.symbol() {
@@ -238,7 +262,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 	match current_token.token_type() {
 		TokenType::Operator if current_token.symbol() == "->" => {
 			current_token = parser.advance()
-				.ok_or(Error::invalid_syntax(None, "Invalid syntax"))?
+				.ok_or_else(|| Error::invalid_syntax(None, "Invalid syntax"))?
 				.clone();
 
 			parser.advance();
@@ -309,7 +333,7 @@ pub fn var_def(parser: &mut Parser) -> Result<(Node, Option<Node>), Feedback> {
 	};
 
 	current_token = parser.advance()
-		.ok_or(Error::expected(current_token.pos(), "':'", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "':'", None))?
 		.clone();
 
 	match current_token.token_type() {
@@ -322,7 +346,7 @@ pub fn var_def(parser: &mut Parser) -> Result<(Node, Option<Node>), Feedback> {
 		Err(_) => None
 	};
 
-	return Ok((identifier, var_type))
+	Ok((identifier, var_type))
 }
 
 /// Creates a `Node::VarDecl`.
@@ -384,7 +408,7 @@ pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	current_token = parser.advance()
-		.ok_or(Error::expected(current_token.pos(), "symbol", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "symbol", None))?
 		.clone();
 
 	match current_token.symbol() {
@@ -417,7 +441,7 @@ pub fn func_call(parser: &mut Parser, identifier: &Node) -> Result<Node, Feedbac
 				params.push(expr(parser)?);
 
 				current_token = parser.current_token()
-					.ok_or(Error::expected(current_token.pos(), "',' or ')'", None))?
+					.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
 					.clone();
 
 				match current_token.symbol() {
@@ -450,7 +474,7 @@ pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 	parser.skip_new_lines();
 
 	current_token = parser.current_token()
-		.ok_or(Error::expected(current_token.pos(), "',' or ')'", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
 		.clone();
 
 	if current_token.symbol() != "{" {
@@ -475,7 +499,7 @@ pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 	}
 
 	current_token = parser.current_token()
-		.ok_or(Error::expected(current_token.pos(), "',' or ')'", None))?
+		.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
 		.clone();
 
 	match current_token.token_type() {

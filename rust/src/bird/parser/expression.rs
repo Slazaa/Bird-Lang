@@ -48,7 +48,7 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 			let expr = expr(parser)?;
 
 			current_token = parser.current_token()
-				.ok_or(Error::expected(current_token.pos(), "token", Some(&format!("'{}'", current_token.symbol()))))?
+				.ok_or_else(|| Error::expected(current_token.pos(), "token", Some(&format!("'{}'", current_token.symbol()))))?
 				.clone();
 
 			if *current_token.token_type() == TokenType::Separator && ")".contains(current_token.symbol()) {
@@ -56,7 +56,7 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 				return Ok(expr);
 			} else {
 				current_token = parser.current_token()
-					.ok_or(Error::expected(current_token.pos(), "')'", None))?
+					.ok_or_else(|| Error::expected(current_token.pos(), "')'", None))?
 					.clone();
 
 				return Err(Error::expected(current_token.pos(), "')'", Some(&format!("'{}'", current_token.symbol()))));

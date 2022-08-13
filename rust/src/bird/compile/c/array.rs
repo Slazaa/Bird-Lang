@@ -1,7 +1,6 @@
 pub fn array() -> String {
 	String::from("\
 import bird::memory::{self, BirdAlloc}
-import bird::ptr::NULL;
 import bird::operators::Index;
 
 pub struct Array<T>
@@ -16,7 +15,7 @@ impl Array<T>
 	{
 		var ptr = BirdAlloc::allocate(size_of<T>() * size)
 
-		if (ptr == NULL)
+		if (ptr == null)
 		{
 			return Err(\"Failed allocating memory\")
 		}
@@ -29,20 +28,30 @@ impl Array<T>
 		return self.size
 	}
 
-	pub func get(&self, index: uint) -> &T
+	pub func get(&self, index: uint) -> Option<&T>
 	{
-		return &*(self.ptr + index)
+		if (index >= self.size)
+		{
+			return None
+		}
+
+		return Some(&*(self.ptr + index))
 	}
 
-	pub func get_mut(&mut self, index: uint) -> &mut T
+	pub func get_mut(&mut self, index: uint) -> Option<&mut T>
 	{
+		if (index >= self.size)
+		{
+			return None
+		}
+
 		return &mut *(self.ptr + index)
 	}
 }
 
 impl Drop for Array<T>
 {
-	pub fn drop(&mut self)
+	pub func drop(&mut self)
 	{
 		BirdAlloc::free(self.ptr)
 	}
@@ -52,8 +61,13 @@ impl Index for Array<T>
 {
 	type Output = T
 
-	pub fn index(&self, index: uint) -> &Self::Output
+	pub func index(&self, index: uint) -> &Output
 	{
+		if (index >= self.size)
+		{
+			panic(\"Index out of bounds\")
+		}
+
 		return &*(self.ptr + index)
 	}
 }\
