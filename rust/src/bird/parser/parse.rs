@@ -1,14 +1,13 @@
-use crate::bird::lexer::{Token, TokenType};
+use crate::bird::lexer::{Token, TokenType, Position};
 use crate::bird::feedback::*;
 use crate::bird::parser::statement::*;
 
 /// This enum defines the nodes of the AST.
 #[derive(Clone, Debug)]
 pub enum Node {
-	// ----------
-	Literal(String),
-	Identifier(String),
-	Operator(String),
+	Literal(String, (Position, Position)),
+	Identifier(String, (Position, Position)),
+	Operator(String, (Position, Position)),
 	// ----------
 	Program { body: Vec<Node> },
 	// Expressions
@@ -23,10 +22,28 @@ pub enum Node {
 	FuncCall { identifier: Box<Node>, params: Vec<Node> },
 	// Statements
 	IfStatement { condition: Box<Node>, body: Vec<Node> },
+	LoopStatement { condition: Box<Node>, body: Vec<Node> },
 	// Types
 	Type { identifier: Box<Node> },
 	TypeArray { identifier: Box<Node>, size: Box<Node> },
 	TypePtr { identifier: Box<Node>, mutable: bool }
+}
+
+impl Node {
+	pub fn literal(value: &str, pos: (&Position, &Position)) -> Self {
+		let pos = (pos.0.clone(), pos.1.clone());
+		Self::Literal(value.to_owned(), pos)
+	}
+
+	pub fn identifier(value: &str, pos: (&Position, &Position)) -> Self {
+		let pos = (pos.0.clone(), pos.1.clone());
+		Self::Identifier(value.to_owned(), pos)
+	}
+
+	pub fn operator(value: &str, pos: (&Position, &Position)) -> Self {
+		let pos = (pos.0.clone(), pos.1.clone());
+		Self::Operator(value.to_owned(), pos)
+	}
 }
 
 /// The `Parser` generates an AST from a `Token` list.

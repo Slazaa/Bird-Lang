@@ -41,7 +41,10 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	match current_token.token_type() {
-		TokenType::Identifier => Ok(Node::Type { identifier: Box::new(Node::Identifier(current_token.symbol().to_owned())) }),
+		TokenType::Identifier => {
+			let identifier = Node::identifier(current_token.symbol(), current_token.pos());
+			Ok(Node::Type { identifier: Box::new(identifier) })
+		}
 		TokenType::Operator if current_token.symbol() == "*" => {
 			current_token = parser.advance()
 				.ok_or_else(|| Error::expected(current_token.pos(), "type", None))?
@@ -60,7 +63,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 				.clone();
 
 			let identifier = match current_token.token_type() {
-				TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
+				TokenType::Identifier => Node::identifier(current_token.symbol(), current_token.pos()),
 				_ => return Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))
 			};
 
@@ -72,7 +75,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 				.clone();
 
 			let identifier = match current_token.token_type() {
-				TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
+				TokenType::Identifier => Node::identifier(current_token.symbol(), current_token.pos()),
 				_ => return Err(Error::expected(current_token.pos(), "type", Some(&format!("'{}'", current_token.symbol()))))
 			};
 
@@ -90,7 +93,7 @@ fn type_node(parser: &mut Parser) -> Result<Node, Feedback> {
 				.clone();
 
 			let size = match current_token.token_type() {
-				TokenType::Literal => Node::Literal(current_token.symbol().to_owned()),
+				TokenType::Literal => Node::literal(current_token.symbol(), current_token.pos()),
 				_ => return Err(Error::expected(current_token.pos(), "literal", Some(&format!("'{}'", current_token.symbol()))))
 			};
 
@@ -161,7 +164,7 @@ pub fn control_flow_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 			"else" => todo!(),
 			"func" => return func_decl(parser),
 			"if" => return if_statement(parser),
-			"loop" => todo!(),
+			"loop" => return loop_statement(parser),
 			_ => ()
 		}
 	}
@@ -191,7 +194,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 				_ => current_token.symbol().to_owned()
 			};
 
-			Node::Identifier(identifier)
+			Node::identifier(&identifier, current_token.pos())
 		}
 		_ => return Err(Error::expected(current_token.pos(), "identifier", Some(&format!("'{}'", current_token.symbol()))))
 	};
@@ -270,7 +273,7 @@ pub fn func_decl(parser: &mut Parser) -> Result<Node, Feedback> {
 			match current_token.token_type() {
 				TokenType::Identifier => {
 					if let Node::FuncDecl { return_type, .. } = &mut func_decl {
-						*return_type = Box::new(Some(Node::Identifier(current_token.symbol().to_owned())));
+						*return_type = Box::new(Some(Node::identifier(current_token.symbol(), current_token.pos())));
 					}
 				},
 				_ => return Err(Error::expected(current_token.pos(), "'Identifier'", Some(&format!("'{}'", current_token.symbol()))))
@@ -328,7 +331,7 @@ pub fn var_def(parser: &mut Parser) -> Result<(Node, Option<Node>), Feedback> {
 	};
 
 	let identifier = match current_token.token_type() {
-		TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
+		TokenType::Identifier => Node::identifier(current_token.symbol(), current_token.pos()),
 		_ => return Err(Error::expected(current_token.pos(), "identifier", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
@@ -403,7 +406,7 @@ pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 	};
 
 	let identifier = match current_token.token_type() {
-		TokenType::Identifier => Node::Identifier(current_token.symbol().to_owned()),
+		TokenType::Identifier => Node::identifier(current_token.symbol(), current_token.pos()),
 		_ => return Err(Error::expected(current_token.pos(), "'identifier", Some(&format!("'{}'", current_token.symbol()))))
 	};
 
@@ -417,7 +420,7 @@ pub fn assignment(parser: &mut Parser) -> Result<Node, Feedback> {
 		_ => return Err(Error::expected(current_token.pos(), "symbol", Some(&format!("'{}'", current_token.symbol()))))
 	}
 
-	let operator = Node::Operator(current_token.symbol().to_owned());
+	let operator = Node::operator(current_token.symbol(), current_token.pos());
 
 	parser.advance();
 
@@ -510,4 +513,58 @@ pub fn if_statement(parser: &mut Parser) -> Result<Node, Feedback> {
 	parser.advance();
 
 	Ok(if_statement)
+}
+
+pub fn loop_statement(parser: &mut Parser) -> Result<Node, Feedback> {
+	let mut current_token = match parser.advance() {
+		Some(x) => x.clone(),
+		None => return Err(Error::expected(parser.last_token().unwrap().pos(), "'('", None))
+	};
+
+	if current_token.symbol() != "(" {
+		return Err(Error::expected(current_token.pos(), "(", Some(&format!("'{}'", current_token.symbol()))));
+	}
+
+	let condition = expr(parser)?;
+
+	parser.advance();
+	parser.skip_new_lines();
+
+	current_token = parser.current_token()
+		.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
+		.clone();
+
+	if current_token.symbol() != "{" {
+		return Err(Error::expected(current_token.pos(), "{", Some(&format!("'{}'", current_token.symbol()))));
+	}
+
+	parser.advance();
+
+	let parent_node = parser.parent_node()
+		.clone();
+
+	let mut loop_statement = Node::LoopStatement { condition: Box::new(condition), body: Vec::new() };
+
+	*parser.parent_node_mut() = loop_statement.clone();
+
+	let loop_body = parser.statements()?;
+
+	*parser.parent_node_mut() = parent_node;
+
+	if let Node::LoopStatement { body, .. } = &mut loop_statement {
+		*body = loop_body;
+	}
+
+	current_token = parser.current_token()
+		.ok_or_else(|| Error::expected(current_token.pos(), "',' or ')'", None))?
+		.clone();
+
+	match current_token.token_type() {
+		TokenType::Separator if current_token.symbol() == "}" => (),
+		_ => return Err(Error::expected(current_token.pos(), "'}'", Some(&format!("'{}'", current_token.symbol()))))
+	}
+
+	parser.advance();
+
+	Ok(loop_statement)
 }

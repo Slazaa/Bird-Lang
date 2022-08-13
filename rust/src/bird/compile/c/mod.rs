@@ -78,17 +78,25 @@ impl Compiler {
 
 	fn eval(&mut self, node: &Node) -> Result<String, Feedback> {
 		match node {
-			Node::Literal(value) => Ok(value.to_owned()),
-			Node::Identifier(value) => Ok(value.to_owned()),
-			Node::Operator(value) => Ok(value.to_owned()),
+			Node::Literal(value, ..) => Ok(value.to_owned()),
+			Node::Identifier(value, ..) => Ok(value.to_owned()),
+			Node::Operator(value, ..) => Ok(value.to_owned()),
+
 			Node::Program { body } => self.program(body),
+
 			Node::UnaryExpr { operator, node } => self.unary_expr(operator, node),
 			Node::BinExpr { operator, left, right } => self.bin_expr(operator, left, right),
+
 			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body),
 			Node::VarDecl { public, global, identifier, var_type, value } => self.var_decl(*public, *global, identifier, var_type, value),
+
 			Node::Assignment { identifier, operator, value } => self.assignment(identifier, operator, &*value),
+
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
+
 			Node::IfStatement { condition, body } => self.if_statement(condition, body),
+			Node::LoopStatement { condition, body } => self.loop_statement(condition, body),
+
 			Node::Type { identifier } => self.type_node(identifier),
 			Node::TypePtr { identifier, mutable } => self.type_ptr_node(identifier, *mutable),
 			_ => todo!()
@@ -168,13 +176,15 @@ impl Compiler {
 		}
 		
 		match var_type {
-			Node::TypeArray { identifier, size } => write!(res, "{} {}[{}];", self.eval(identifier)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
-			_ => write!(res, "{} {};", self.eval(var_type)?, self.eval(identifier)?).unwrap()
+			Node::TypeArray { identifier, size } => write!(res, "{} {}[{}]", self.eval(identifier)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
+			_ => write!(res, "{} {}", self.eval(var_type)?, self.eval(identifier)?).unwrap()
 		}
 
 		if let Some(value) = value {
-			write!(&mut res, "={};", self.eval(value)?).unwrap();
+			write!(&mut res, "={}", self.eval(value)?).unwrap();
 		}
+
+		res.push(';');
 
 		Ok(res)
 	}
@@ -190,9 +200,7 @@ impl Compiler {
 
 		if !params.is_empty() {
 			for node in params {
-				if let Node::Identifier(identifier) = node {
-					write!(&mut res, "{}, ", identifier).unwrap();
-				}
+				write!(&mut res, "{}, ", self.eval(node)?).unwrap();
 			}
 
 			res.truncate(res.len() - 2);
@@ -207,6 +215,20 @@ impl Compiler {
 		let mut res = String::new();
 
 		write!(&mut res, "if({}){{", self.eval(condition)?).unwrap();
+
+		for node in body {
+			res.push_str(&self.eval(node)?);
+		}
+
+		res.push('}');
+
+		Ok(res)
+	}
+
+	fn loop_statement(&mut self, condition: &Node, body: &Vec<Node>) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		write!(&mut res, "while({}){{", self.eval(condition)?).unwrap();
 
 		for node in body {
 			res.push_str(&self.eval(node)?);

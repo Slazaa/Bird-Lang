@@ -31,16 +31,16 @@ pub fn factor(parser: &mut Parser) -> Result<Node, Feedback> {
 	match current_token.token_type() {
 		TokenType::Literal => {
 			parser.advance();
-			return Ok(Node::Literal(current_token.symbol().to_owned()));
+			return Ok(Node::literal(current_token.symbol(), current_token.pos()));
 		}
 		TokenType::Identifier => {
 			parser.advance();
-			return Ok(Node::Identifier(current_token.symbol().to_owned()));
+			return Ok(Node::identifier(current_token.symbol(), current_token.pos()));
 		}
 		TokenType::Operator if "+-".contains(current_token.symbol()) => {
 			parser.advance();
 			let factor = factor(parser)?;
-			let operator = Node::Operator(current_token.symbol().to_owned());
+			let operator = Node::operator(current_token.symbol(), current_token.pos());
 			return Ok(Node::UnaryExpr { operator: Box::new(operator), node: Box::new(factor) });
 		}
 		TokenType::Separator if "(".contains(current_token.symbol()) => {
@@ -93,16 +93,16 @@ pub fn binary_op(parser: &mut Parser, first_func: NodeFunc, second_func: Option<
 			return Err(Error::expected(token.pos(), "operator", Some(&format!("'{}'", token.symbol()))));
 		}
 		
-		while let Some(token) = parser.current_token() {
-			if !ops.contains(&token.symbol()) {
+		while let Some(current_token) = parser.current_token() {
+			if !ops.contains(&current_token.symbol()) {
 				break;
 			}
 
-			if !OPERATORS.contains(&token.symbol()) {
-				return Err(Error::invalid_syntax(Some(token.pos()), "Invalid operator"))
+			if !OPERATORS.contains(&current_token.symbol()) {
+				return Err(Error::invalid_syntax(Some(current_token.pos()), "Invalid operator"))
 			}
 
-			let operator = Node::Operator(token.symbol().to_owned());
+			let operator = Node::operator(current_token.symbol(), current_token.pos());
 
 			parser.advance();
 
