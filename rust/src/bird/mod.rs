@@ -34,7 +34,7 @@ pub fn to_c() -> Result<(), Feedback> {
 
 	//text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
 
-	c::types::types_file()?;
+	c::utils::utils_file()?;
 
 	Ok(())
 }

@@ -268,7 +268,7 @@ impl Lexer {
 		let token_type = match KEYWORDS.contains(&res.as_str()) {
 			true => TokenType::Keyword,
 			false => {
-				match ["false", "true"].contains(&res.as_str()) {
+				match ["false", "true", "null"].contains(&res.as_str()) {
 					true => TokenType::Literal,
 					false => TokenType::Identifier
 				}

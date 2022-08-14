@@ -1,5 +1,5 @@
 pub mod array;
-pub mod types;
+pub mod utils;
 
 use std::fs::OpenOptions;
 use std::fs::{self, File};
@@ -7,7 +7,7 @@ use std::path::Path;
 use std::io::Write as _;
 use std::fmt::Write as _;
 
-use crate::bird::constants::compile;
+use crate::bird::constants::compile::{self, FUNC_PREFIX};
 use crate::bird::feedback::*;
 use crate::bird::parser::*;
 use crate::bird::SRC_FOLDER;
@@ -57,7 +57,7 @@ impl Compiler {
 			func_protos: Vec::new()
 		};
 
-		if writeln!(compiler.main_file, "#include \"bird/types.h\"").is_err() {
+		if writeln!(compiler.main_file, "#include \"bird/c_utils.h\"").is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
@@ -78,9 +78,9 @@ impl Compiler {
 
 	fn eval(&mut self, node: &Node) -> Result<String, Feedback> {
 		match node {
-			Node::Literal(value, ..) => Ok(value.to_owned()),
-			Node::Identifier(value, ..) => Ok(value.to_owned()),
-			Node::Operator(value, ..) => Ok(value.to_owned()),
+			Node::Literal(value, ..) => self.literal(value),
+			Node::Identifier(value, ..) => self.indentifier(value),
+			Node::Operator(value, ..) => self.operator(value),
 
 			Node::Program { body } => self.program(body),
 
@@ -101,6 +101,23 @@ impl Compiler {
 			Node::TypePtr { identifier, mutable } => self.type_ptr_node(identifier, *mutable),
 			_ => todo!()
 		}
+	}
+
+	fn literal(&mut self, value: &str) -> Result<String, Feedback> {
+		Ok(value.to_owned())
+	}
+
+	fn indentifier(&mut self, value: &str) -> Result<String, Feedback> {
+		let value = match value {
+			"main" => format!("{}{}", FUNC_PREFIX, value),
+			_ => value.to_owned()
+		};
+
+		Ok(value)
+	}
+
+	fn operator(&mut self, value: &str) -> Result<String, Feedback> {
+		Ok(value.to_owned())
 	}
 
 	fn program(&mut self, body: &Vec<Node>) -> Result<String, Feedback> {

@@ -49,8 +49,8 @@ impl Node {
 /// The `Parser` generates an AST from a `Token` list.
 pub struct Parser {
 	tokens: Vec<Token>,
-	token_index: i32,
-	current_token: Option<Token>,
+	token_index: usize,
+	current_token: Token,
 	last_token: Option<Token>,
 	parent_node: Node,
 	next_pub: Option<Token>
@@ -59,16 +59,19 @@ pub struct Parser {
 impl Parser {
 	/// Parse the `Token` list into an AST.
 	pub fn parse(tokens: &[Token]) -> Result<Node, Feedback> {
+		let current_token = match tokens.first() {
+			Some(x) => x.clone(),
+			None => return Ok(Node::Program { body: vec![] })
+		};
+
 		let mut parser = Self { 
 			tokens: tokens.to_vec(),
-			token_index: -1,
-			current_token: None,
+			token_index: 0,
+			current_token,
 			last_token: None,
 			parent_node: Node::Program { body: Vec::new() },
 			next_pub: None
 		};
-
-		parser.advance();
 
 		let statements = parser.statements()?;
 
@@ -79,9 +82,13 @@ impl Parser {
 		Ok(parser.parent_node)
 	}
 
-	/// Returns an option to a reference to the current token.
-	pub fn current_token(&self) -> Option<&Token> {
-		self.current_token.as_ref()
+	pub fn is_more_token(&self) -> bool {
+		self.token_index < self.tokens.len()
+	}
+
+	/// Returns reference to the current token.
+	pub fn current_token(&self) -> &Token {
+		&self.current_token
 	}
 
 	/// Returns an option to a reference to the last token.
@@ -112,31 +119,34 @@ impl Parser {
 	}
 
 	/// Advances to the next `Token`.
-	/// Sets the current `Token` to `None` if no more `Token`.
-	pub fn advance(&mut self) -> Option<&Token> {
+	/// Returns a reference to the current `Node`.
+	pub fn advance(&mut self) -> Result<(), ()> {
 		self.token_index += 1;
-		self.last_token = self.current_token.clone();
+		self.last_token = Some(self.current_token().clone());
 
-		if self.token_index < self.tokens.len() as i32 {
-			self.current_token = Some(self.tokens[self.token_index as usize].clone());
-
-			if self.current_token.is_some() {
-				return self.current_token();
-			}
+		if self.token_index < self.tokens.len() {
+			self.current_token = self.tokens[self.token_index].clone();
+			return Ok(());
 		}
 
-		self.current_token = None;
-
-		None
+		Err(())
 	}
 
 	/// Advances the current `Token` util it is not a new line `Token`.
 	pub fn skip_new_lines(&mut self) {
-		while let Some(current_token) = self.current_token.clone() {
-			match current_token.token_type() {
-				TokenType::Separator if current_token.symbol() == "\n" => self.advance(),
+		if !self.is_more_token() {
+			return;
+		}
+
+		loop {
+			match self.current_token().token_type() {
+				TokenType::Separator if self.current_token().symbol() == "\n" => (),
 				_ => break
 			};
+
+			if self.advance().is_err() {
+				break;
+			}
 		}
 	}
 
@@ -147,21 +157,24 @@ impl Parser {
 		loop {
 			self.skip_new_lines();
 
-			let current_token = match self.current_token.clone() {
-				Some(x) => x,
-				None => break
-			};
+			if !self.is_more_token() {
+				break;
+			}
 
 			match &self.parent_node {
 				Node::Program { .. } => (),
-				_ if current_token.symbol() == "}" => break,
+				_ if self.current_token().symbol() == "}" => break,
 				_ => ()
 			}
 
-			match current_token.token_type() {
-				TokenType::Keyword if current_token.symbol() == "pub" => {
-					self.next_pub = Some(current_token.clone());
-					self.advance();
+			match self.current_token().token_type() {
+				TokenType::Keyword if self.current_token().symbol() == "pub" => {
+					self.next_pub = Some(self.current_token().clone());
+					
+					if self.advance().is_err() {
+						return Err(Error::expected(self.current_token().pos(), "'Item'", None))
+					}
+
 					continue;
 				}
 				_ => ()
