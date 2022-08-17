@@ -8,10 +8,10 @@ use super::constants::*;
 #[derive(PartialEq, Clone, Debug)]
 pub enum TokenType {
 	Literal,
+	Identifier,
 	Operator,
 	Separator,
-	Keyword,
-	Identifier
+	Keyword
 }
 
 #[derive(Clone, Debug)]
@@ -24,15 +24,15 @@ pub enum PathOrText {
 /// so they can be identified easily.
 #[derive(Clone, Debug)]
 pub struct Position {
-	index: i32,
-	line: i32,
-	colomn: i32,
+	index: usize,
+	line: usize,
+	colomn: usize,
 	path_or_text: PathOrText
 }
 
 impl Position {
 	/// Constructs a new `Position`.
-	pub fn new(index: i32, line: i32, colomn: i32, path_or_text: PathOrText) -> Self {
+	pub fn new(index: usize, line: usize, colomn: usize, path_or_text: PathOrText) -> Self {
 		Self {
 			index,
 			line,
@@ -42,22 +42,22 @@ impl Position {
 	}
 
 	/// Returns the index the `Position` is tracking.
-	pub fn index(&self) -> i32 {
+	pub fn index(&self) -> usize {
 		self.index
 	}
 
 	/// Returns the line the `Position` is tracking.
-	pub fn line(&self) -> i32 {
+	pub fn line(&self) -> usize {
 		self.line
 	}
 
 	/// Returns the column the `Position` is tracking.
-	pub fn colomn(&self) -> i32 {
+	pub fn colomn(&self) -> usize {
 		self.colomn
 	}
 
 	/// Returns a mutable reference to the column the `Position` is tracking.
-	pub fn colomn_mut(&mut self) -> &mut i32 {
+	pub fn colomn_mut(&mut self) -> &mut usize {
 		&mut self.colomn
 	}
 
@@ -69,15 +69,13 @@ impl Position {
 	/// Increments the `Position` index and the collumn and
 	/// increments the line when encontering a new line character,
 	/// this will also resets the collumn.
-	pub fn advance(&mut self, current_char: Option<char>) {
+	pub fn advance(&mut self, current_char: char) {
 		self.index += 1;
 		self.colomn += 1;
 
-		if let Some(current_char) = current_char {
-			if current_char == '\n' {
-				self.line += 1;
-				self.colomn = 0;
-			}
+		if current_char == '\n' {
+			self.line += 1;
+			self.colomn = 0;
 		}
 	}
 }
@@ -125,7 +123,7 @@ impl Token {
 pub struct Lexer {
 	text: String,
 	pos: Position,
-	current_char: Option<char>
+	current_char: char
 }
 
 impl Lexer {
@@ -137,40 +135,47 @@ impl Lexer {
 			None => PathOrText::Text(text.to_owned())
 		};
 
-		let mut lexer = Self {
-			text: text.to_owned(),
-			pos: Position::new(-1, 0, -1, file_or_text),
-			current_char: None
+		let first_char = match text.chars().nth(0) {
+			Some(x) => x,
+			None => return Ok(vec![])
 		};
 
-		lexer.advance();
+		let mut lexer = Self {
+			text: text.to_owned(),
+			pos: Position::new(0, 0, 0, file_or_text),
+			current_char: first_char
+		};
 
 		let mut tokens = Vec::new();
 
-		while let Some(c) = lexer.current_char {
-			let str_c = c.to_string();
+		loop {
+			if !lexer.is_more_char() {
+				break;
+			}
 
-			if " \r\t".contains(&str_c) {
-				lexer.advance();
-			} else if "\n".contains(&str_c) {
-				let pos = lexer.pos.clone();
-				tokens.push(Token::new(TokenType::Separator, "\n", &pos, Some(&pos)));
-				lexer.advance();
-			} else if "#".contains(&str_c) {
-				lexer.skip_comment();
-			} else if c.is_ascii_digit() {
-				tokens.push(lexer.make_number());	
-			} else if c.is_alphabetic() || c == '_' {
-				tokens.push(lexer.make_identifier());
-			} else if "\"".contains(&str_c) {
-				match lexer.make_string() {
-					Ok(token) => tokens.push(token),
-					Err(e) => return Err(e)
+			match lexer.current_char {
+				' ' | '\r' | '\t' => {
+					if lexer.advance().is_err() {
+						break;
+					}
 				}
-			} else {
-				match lexer.make_operator() {
-					Ok(token) => tokens.push(token),
-					Err(e) => return Err(e)
+				'\n' => {
+					tokens.push(Token::new(TokenType::Separator, "\n", &lexer.pos, Some(&lexer.pos)));
+
+					if lexer.advance().is_err() {
+						break;
+					}
+				}
+				'#' => lexer.skip_comment(),
+				'"' => tokens.push(lexer.make_string()?),
+				_ => {
+					if lexer.current_char.is_ascii_digit() {
+						tokens.push(lexer.make_number());	
+					} else if lexer.current_char.is_alphabetic() || lexer.current_char == '_' {
+						tokens.push(lexer.make_identifier());
+					} else {
+						tokens.push(lexer.make_operator()?);
+					}
 				}
 			}
 		}
@@ -178,32 +183,29 @@ impl Lexer {
 		Ok(tokens)
 	}
 
+	pub fn is_more_char(&self) -> bool {
+		self.pos.index() < self.text.len()
+	}
+
 	/// Sets the current char to be the next char and returns it if it exists,
 	/// else returns `None` and sets the current char to `None`.
-	fn advance(&mut self) -> Option<char> {
+	fn advance(&mut self) -> Result<(), ()> {
 		self.pos.advance(self.current_char);
 
-		if self.pos.index() < self.text.len() as i32 {
-			self.current_char = Some(self.text.chars().nth(self.pos.index() as usize).unwrap());
-			
-			if let Some(current_char) = self.current_char {
-				return Some(current_char);
-			}
+		if self.pos.index() < self.text.len() {
+			self.current_char = self.text.chars().nth(self.pos.index() as usize).unwrap();
+			return Ok(());
 		}
 
-		self.current_char = None;
-
-		None
+		Err(())
 	}
 
 	/// Skips the comments, comments starting with a '#' character
 	fn skip_comment(&mut self) {
-		while let Some(c) = self.current_char {
-			if c == '\n' {
+		while self.current_char != '\n' {
+			if self.advance().is_err() {
 				break;
 			}
-
-			self.advance();
 		}
 	}
 
@@ -215,21 +217,12 @@ impl Lexer {
 		let pos_start = self.pos.clone();
 		let mut pos_end = pos_start.clone();
 
-		while let Some(mut current_char) = self.current_char {
-			if current_char == '_' {
-				current_char = match self.advance() {
-					Some(x) => x,
-					None => break
-				};
-			}
-
-			if !current_char.is_ascii_digit() && current_char != '.' {
+		loop {
+			if !self.current_char.is_ascii_digit() && self.current_char != '.' && self.current_char != '_' {
 				break;
 			}
 
-			let c = current_char;
-
-			if c == '.' {
+			if self.current_char == '.' {
 				if dot_count == 1 {
 					break;
 				}
@@ -237,11 +230,14 @@ impl Lexer {
 				dot_count += 1;
 				res.push('.');
 			} else {
-				res.push(c);
+				res.push(self.current_char);
 			}
 
 			pos_end = self.pos.clone();
-			self.advance();
+			
+			if self.advance().is_err() {
+				break;
+			}
 		}
 
 		Token::new(TokenType::Literal, &res, &pos_start, Some(&pos_end))
@@ -254,15 +250,17 @@ impl Lexer {
 		let pos_start = self.pos.clone();
 		let mut pos_end = pos_start.clone();
 
-		while let Some(current_char) = self.current_char {
-			if !current_char.is_alphanumeric() && current_char != '_' {
+		loop {
+			if !self.current_char.is_alphanumeric() && self.current_char != '_' {
 				break;
 			}
 
-			res.push(current_char);
-
+			res.push(self.current_char);
 			pos_end = self.pos.clone();
-			self.advance();
+			
+			if self.advance().is_err() {
+				break;
+			}
 		}
 
 		let token_type = match KEYWORDS.contains(&res.as_str()) {
@@ -287,20 +285,19 @@ impl Lexer {
 		let mut pos_end = pos_start.clone();
 
 		loop {
-			let c = match self.advance() {
-				Some(x) => x,
-				None => return Err(Error::expected((&pos_end, &pos_end), "'\"'", None))
-			};
+			if self.advance().is_err() {
+				break;
+			}
 
-			res.push(c);
+			res.push(self.current_char);
 			pos_end = self.pos.clone();
 
-			if c == '"' {
+			if self.current_char == '"' {
 				break;
 			}
 		}
 
-		self.advance();
+		self.advance().unwrap_or(());
 
 		Ok(Token::new(TokenType::Literal, &res, &pos_start, Some(&pos_end)))
 	}
@@ -312,19 +309,21 @@ impl Lexer {
 		let pos_start = self.pos.clone();
 		let mut pos_end = pos_start.clone();
 
-		if !OPERATOR_CHARS.contains(self.current_char.unwrap()) {
+		if !OPERATOR_CHARS.contains(self.current_char) {
 			return self.make_separator();
 		}
 
-		while let Some(current_char) = self.current_char {
-			if !OPERATOR_CHARS.contains(current_char) {
+		loop {
+			if !OPERATOR_CHARS.contains(self.current_char) {
 				break;
 			}
 
-			res.push(current_char);
+			res.push(self.current_char);
 			pos_end = self.pos.clone();
 
-			self.advance();
+			if self.advance().is_err() {
+				break;
+			}
 		}
 
 		if !OPERATORS.contains(&res.as_str()) {
@@ -338,14 +337,12 @@ impl Lexer {
 	fn make_separator(&mut self) -> Result<Token, Feedback> {
 		let pos_start = self.pos.clone();
 
-		if !SEPARATORS.contains(self.current_char.unwrap()) {
+		if !SEPARATORS.contains(self.current_char) {
 			return Err(Error::invalid_syntax(Some((&pos_start, &pos_start)), "Invalid token"));
 		}
 
-		let current_char = self.current_char.unwrap();
-
-		self.advance();
-
-		Ok(Token::new(TokenType::Separator, &String::from(current_char), &pos_start, Some(&pos_start)))
+		let res = Token::new(TokenType::Separator, &String::from(self.current_char), &pos_start, Some(&pos_start));
+		self.advance().unwrap_or(());
+		Ok(res)
 	}
 }
