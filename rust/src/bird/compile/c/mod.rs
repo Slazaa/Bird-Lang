@@ -16,7 +16,7 @@ pub static OUTPUT_FOLDER: &str = "c";
 
 pub struct Compiler {
 	main_file: File,
-	func_protos: Vec<String>
+	func_protos: Vec<Node>
 }
 
 impl Compiler {
@@ -61,15 +61,18 @@ impl Compiler {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
-		let result = compiler.eval(ast)?;
+		let res = compiler.eval(ast)?;
+		let func_protos = compiler.func_protos.clone();
 
-		for proto in compiler.func_protos {
+		for proto in func_protos {
+			let proto = compiler.eval(&proto)?;
+
 			if write!(compiler.main_file, "{}", proto).is_err() {
 				return Err(Error::unspecified("Failed writing to 'main.c' file"));
 			}
 		}
 
-		if write!(compiler.main_file, "{}int main(int argc, char** argv){{{}main();return 0;}}", result, compile::FUNC_PREFIX).is_err() {
+		if write!(compiler.main_file, "{}int main(int argc, char** argv){{{}main();return 0;}}", res, compile::FUNC_PREFIX).is_err() {
 			return Err(Error::unspecified("Failed writing to 'main.c' file"));
 		}
 
@@ -78,28 +81,43 @@ impl Compiler {
 
 	fn eval(&mut self, node: &Node) -> Result<String, Feedback> {
 		match node {
+			Node::Undefined => Err(Error::unspecified("Found undefined node")),
+
+			Node::Program(body) => self.program(body),
+
 			Node::Literal(value, ..) => self.literal(value),
 			Node::Identifier(value, ..) => self.indentifier(value),
 			Node::Operator(value, ..) => self.operator(value),
+			Node::Block(nodes) => self.block(nodes),
 
-			Node::Program { body } => self.program(body),
+			Node::UnaryExpr { operator, node, wrapped } => self.unary_expr(operator, node, *wrapped),
+			Node::BinExpr { operator, left, right, wrapped } => self.bin_expr(operator, left, right, *wrapped),
 
-			Node::UnaryExpr { operator, node } => self.unary_expr(operator, node),
-			Node::BinExpr { operator, left, right } => self.bin_expr(operator, left, right),
+			Node::Field { identifier, filed_type } => self.field(identifier, filed_type),
 
-			Node::FuncDecl { public, identifier, params, return_type, body } => self.func_decl(*public, identifier, params, return_type, body),
-			Node::VarDecl { public, global, identifier, var_type, value } => self.var_decl(*public, *global, identifier, var_type, value),
+			Node::FuncProto { public, identifier, params, return_type, kind } => self.func_proto(*public, identifier, params, return_type, *kind),
 
-			Node::Assignment { identifier, operator, value } => self.assignment(identifier, operator, &*value),
+			Node::FuncItem { proto, body } => self.func_item(proto, body),
+			Node::VarItem { public, global, identifier, var_type, value } => self.var_item(*public, *global, identifier, var_type, value),
+			Node::StructItem { identifier, fields, .. } => self.struct_item(identifier, fields),
+
+			Node::Assignment { destination, operator, value } => self.assignment(destination, operator, &*value),
 
 			Node::FuncCall { identifier, params } => self.func_call(identifier, params),
 
-			Node::IfStatement { condition, body } => self.if_statement(condition, body),
-			Node::LoopStatement { condition, body } => self.loop_statement(condition, body),
+			Node::IfStmt { condition, body } => self.if_statement(condition, body),
+			Node::LoopStmt { condition, body } => self.loop_statement(condition, body),
+			Node::ReturnStmt { expr } => self.return_stmt(expr),
 
 			Node::Type { identifier } => self.type_node(identifier),
-			Node::TypePtr { identifier, mutable } => self.type_ptr_node(identifier, *mutable),
-			_ => todo!()
+			Node::TypePtr { identifier, mutable } => self.type_ptr_node(identifier, *mutable)
+		}
+	}
+
+	fn program(&mut self, body: &Node) -> Result<String, Feedback> {
+		match body {
+			Node::Block(nodes) => self.block(nodes),
+			_ => Err(Error::unspecified("Invalid node"))
 		}
 	}
 
@@ -120,27 +138,55 @@ impl Compiler {
 		Ok(value.to_owned())
 	}
 
-	fn program(&mut self, body: &Vec<Node>) -> Result<String, Feedback> {
+	fn block(&mut self, nodes: &Vec<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
-
-		for node in body {
-			let translated_node = self.eval(node)?;
-			res.push_str(&translated_node);
+		
+		for node in nodes {
+			res.push_str(&self.eval(node)?);
+			
+			match node {
+				Node::Literal(..) |
+				Node::Identifier(..) |
+				Node::Operator(..) |
+				Node::UnaryExpr { .. } |
+				Node::BinExpr { .. } |
+				Node::VarItem { .. } |
+				Node::Assignment { .. } |
+				Node::FuncCall { .. } |
+				Node::ReturnStmt { .. }  => res.push(';'),
+				_ => ()
+			}
 		}
 
 		Ok(res)
 	}
 
-	fn unary_expr(&mut self, operator: &Node, node: &Node) -> Result<String, Feedback> {
+	fn unary_expr(&mut self, operator: &Node, node: &Node, wrapped: bool) -> Result<String, Feedback> {
+		if wrapped {
+			return Ok(format!("({}{})", self.eval(operator)?, self.eval(node)?));
+		}
+
 		Ok(format!("{}{}", self.eval(operator)?, self.eval(node)?))
 	}
 
-	fn bin_expr(&mut self, operator: &Node, left: &Node, right: &Node) -> Result<String, Feedback> {
+	fn bin_expr(&mut self, operator: &Node, left: &Node, right: &Node, wrapped: bool) -> Result<String, Feedback> {
+		if wrapped {
+			return Ok(format!("({}{}{})", self.eval(left)?, self.eval(operator)?, self.eval(right)?));
+		}
+
 		Ok(format!("{}{}{}", self.eval(left)?, self.eval(operator)?, self.eval(right)?))
 	}
 
-	fn func_decl(&mut self, public: bool, identifier: &Node, params: &Vec<(Node, Node)>, return_type: &Option<Node>, body: &Option<Vec<Node>>) -> Result<String, Feedback> {
+	fn field(&mut self, identifier: &Node, field_type: &Node) -> Result<String, Feedback> {
+		Ok(format!("{} {}", self.eval(field_type)?, self.eval(identifier)?))
+	}
+
+	fn func_proto(&mut self, public: bool, identifier: &Node, params: &Vec<Node>, return_type: &Option<Node>, kind: ProtoKind) -> Result<String, Feedback> {
 		let mut res = String::new();
+
+		if kind == ProtoKind::Sign && !public {
+			res.push_str("static ");
+		}
 
 		match return_type {
 			Some(return_type) => write!(&mut res, "{} ", self.eval(return_type)?).unwrap(),
@@ -150,64 +196,79 @@ impl Compiler {
 		write!(&mut res, "{}(", self.eval(identifier)?).unwrap();
 
 		if !params.is_empty() {
-			for (identifier, var_type) in params {
-				write!(&mut res, "{} {}, ", self.eval(var_type)?, self.eval(identifier)?).unwrap();
+			for param in params {
+				write!(&mut res, "{},", &self.eval(param)?).unwrap();
 			}
 
-			res.truncate(res.len() - 2);
+			res.pop();
 		} else {
 			res.push_str("void");
 		}
 
 		res.push(')');
-		
-		if let Some(body) = body {
-			let node_signature = Node::FuncDecl { public, identifier: Box::new(identifier.to_owned()), params: params.to_vec(), return_type: Box::new(return_type.to_owned()), body: None };
-			let node_signature_string = self.eval(&node_signature)?;
 
-			self.func_protos.push(node_signature_string);
-
-			res.push('{');
-
-			for node in body {
-				res.push_str(&self.eval(node)?);
-			}
-
-			res.push('}');
-		} else {
-			if !public {
-				res = "static ".to_owned() + &res;
-			}
-
+		if kind != ProtoKind::Decl {
 			res.push(';');
 		}
 
 		Ok(res)
 	}
 
-	fn var_decl(&mut self, public: bool, global: bool, identifier: &Node, var_type: &Node, value: &Option<Node>) -> Result<String, Feedback> {
+	fn func_item(&mut self, proto: &Node, body: &Node) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		res.push_str(&self.eval(proto)?);
+
+		let mut proto_clone = proto.clone();
+		
+		if let Node::FuncProto { kind, .. } = &mut proto_clone {
+			*kind = ProtoKind::Sign;
+		}
+
+		self.func_protos.push(proto_clone);
+
+		res.push('{');
+		res.push_str(&self.eval(body)?);
+		res.push('}');
+
+		Ok(res)
+	}
+
+	fn var_item(&mut self, public: bool, global: bool, identifier: &Node, var_type: &Node, value: &Option<Node>) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		if global && !public {
 			res.push_str("static ");
 		}
 		
-		match var_type {
-			Node::TypeArray { identifier, size } => write!(res, "{} {}[{}]", self.eval(identifier)?, self.eval(identifier)?, self.eval(size)?).unwrap(),
-			_ => write!(res, "{} {}", self.eval(var_type)?, self.eval(identifier)?).unwrap()
-		}
+		write!(res, "{} {}", self.eval(var_type)?, self.eval(identifier)?).unwrap();
 
 		if let Some(value) = value {
 			write!(&mut res, "={}", self.eval(value)?).unwrap();
 		}
 
-		res.push(';');
+		Ok(res)
+	}
+
+	fn struct_item(&mut self, identifier: &Node, fields: &Vec<Node>) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		let eval_identifier = self.eval(identifier)?;
+
+		write!(&mut res, "typedef struct {}{{", eval_identifier).unwrap();
+
+		for field in fields {
+			res.push_str(&self.eval(field)?);
+			res.push(';');
+		}
+
+		write!(&mut res, "}}{};", eval_identifier).unwrap();
 
 		Ok(res)
 	}
 
-	fn assignment(&mut self, identifier: &Node, operator: &Node, value: &Node) -> Result<String, Feedback> {
-		Ok(format!("{}{}{};", self.eval(identifier)?, self.eval(operator)?, self.eval(value)?))
+	fn assignment(&mut self, destination: &Node, operator: &Node, value: &Node) -> Result<String, Feedback> {
+		Ok(format!("{}{}{}", self.eval(destination)?, self.eval(operator)?, self.eval(value)?))
 	}
 
 	fn func_call(&mut self, identifier: &Node, params: &Vec<Node>) -> Result<String, Feedback> {
@@ -217,43 +278,39 @@ impl Compiler {
 
 		if !params.is_empty() {
 			for node in params {
-				write!(&mut res, "{}, ", self.eval(node)?).unwrap();
+				write!(&mut res, "{},", self.eval(node)?).unwrap();
 			}
 
-			res.truncate(res.len() - 2);
+			res.pop();
 		}
 
-		res.push_str(");");
+		res.push(')');
 
 		Ok(res)
 	}
 
-	fn if_statement(&mut self, condition: &Node, body: &Vec<Node>) -> Result<String, Feedback> {
+	fn if_statement(&mut self, condition: &Node, body: &Node) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		write!(&mut res, "if({}){{", self.eval(condition)?).unwrap();
-
-		for node in body {
-			res.push_str(&self.eval(node)?);
-		}
-
+		res.push_str(&self.eval(body)?);
 		res.push('}');
 
 		Ok(res)
 	}
 
-	fn loop_statement(&mut self, condition: &Node, body: &Vec<Node>) -> Result<String, Feedback> {
+	fn loop_statement(&mut self, condition: &Node, body: &Node) -> Result<String, Feedback> {
 		let mut res = String::new();
 
 		write!(&mut res, "while({}){{", self.eval(condition)?).unwrap();
-
-		for node in body {
-			res.push_str(&self.eval(node)?);
-		}
-
+		res.push_str(&self.eval(body)?);
 		res.push('}');
 
 		Ok(res)
+	}
+
+	fn return_stmt(&mut self, expr: &Node) -> Result<String, Feedback> {
+		Ok(format!("return {}", self.eval(expr)?))
 	}
 
 	fn type_node(&mut self, identifier: &Node) -> Result<String, Feedback> {

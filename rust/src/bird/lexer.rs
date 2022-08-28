@@ -56,11 +56,6 @@ impl Position {
 		self.colomn
 	}
 
-	/// Returns a mutable reference to the column the `Position` is tracking.
-	pub fn colomn_mut(&mut self) -> &mut usize {
-		&mut self.colomn
-	}
-
 	/// Returns the filename or the text the `Position` is tracking.
 	pub fn file_or_text(&self) -> &PathOrText {
 		&self.path_or_text
@@ -167,6 +162,7 @@ impl Lexer {
 					}
 				}
 				'#' => lexer.skip_comment(),
+				'\'' => tokens.push(lexer.make_char()?),
 				'"' => tokens.push(lexer.make_string()?),
 				_ => {
 					if lexer.current_char.is_ascii_digit() {
@@ -276,6 +272,45 @@ impl Lexer {
 		Token::new(token_type, &res, &pos_start, Some(&pos_end))
 	}
 
+	fn make_char(&mut self) -> Result<Token, Feedback> {
+		let mut res = String::new();
+		res.push('\'');
+
+		let pos_start = self.pos.clone();
+
+		if self.advance().is_err() {
+			return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
+		}
+
+		match self.current_char {
+			'\'' => return Err(Error::expected((&pos_start, &self.pos.clone()), "char", Some("'"))),
+			_ => {
+				if self.current_char == '\\' {
+					res.push(self.current_char);
+
+					if self.advance().is_err() {
+						return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
+					}
+				}
+
+				res.push(self.current_char);
+			}
+		}
+
+		if self.advance().is_err() {
+			return Err(Error::expected((&pos_start, &self.pos.clone()), "'", None));
+		}
+
+		match self.current_char {
+			'\'' => res.push('\''),
+			_ => return Err(Error::expected((&pos_start, &self.pos.clone()), "char", Some(&self.current_char.to_string())))
+		}
+
+		self.advance().unwrap_or(());
+
+		Ok(Token::new(TokenType::Literal, &res, &pos_start, Some(&self.pos.clone())))
+	}
+
 	/// Constructs a string `Token`
 	fn make_string(&mut self) -> Result<Token, Feedback> {
 		let mut res = String::new();
@@ -342,7 +377,9 @@ impl Lexer {
 		}
 
 		let res = Token::new(TokenType::Separator, &String::from(self.current_char), &pos_start, Some(&pos_start));
+
 		self.advance().unwrap_or(());
+
 		Ok(res)
 	}
 }
