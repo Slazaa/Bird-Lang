@@ -130,7 +130,7 @@ impl Lexer {
 			None => PathOrText::Text(text.to_owned())
 		};
 
-		let first_char = match text.chars().nth(0) {
+		let first_char = match text.chars().next() {
 			Some(x) => x,
 			None => return Ok(vec![])
 		};
@@ -239,6 +239,20 @@ impl Lexer {
 		Token::new(TokenType::Literal, &res, &pos_start, Some(&pos_end))
 	}
 
+	fn escape_sequance(&mut self) -> Result<char, Feedback> {
+		let pos_start = self.pos.clone();
+
+		Ok(match self.current_char {
+			'b' => 0x08 as char,
+			'n' => 0x0A as char,
+			'r' => 0x0D as char,
+			't' => 0x09 as char,
+			'v' => 0x0B as char,
+			'\\' | '\'' | '"' => self.current_char,
+			_ => return Err(Error::invalid_syntax(Some((&pos_start, &self.pos)), &format!("Invalid escape sequance \\{}", self.current_char)))
+		})
+	}
+
 	/// Constructs a identifier `Token`
 	fn make_identifier(&mut self) -> Token {
 		let mut res = String::new();
@@ -286,14 +300,14 @@ impl Lexer {
 			'\'' => return Err(Error::expected((&pos_start, &self.pos.clone()), "char", Some("'"))),
 			_ => {
 				if self.current_char == '\\' {
-					res.push(self.current_char);
-
 					if self.advance().is_err() {
 						return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
 					}
-				}
 
-				res.push(self.current_char);
+					res.push(self.escape_sequance()?);
+				} else {
+					res.push(self.current_char);
+				}
 			}
 		}
 
@@ -324,7 +338,16 @@ impl Lexer {
 				break;
 			}
 
-			res.push(self.current_char);
+			if self.current_char == '\\' {
+				if self.advance().is_err() {
+					return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
+				}
+
+				res.push(self.escape_sequance()?);
+			} else {
+				res.push(self.current_char);
+			}
+
 			pos_end = self.pos.clone();
 
 			if self.current_char == '"' {

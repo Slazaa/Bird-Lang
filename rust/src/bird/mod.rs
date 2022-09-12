@@ -12,6 +12,7 @@ use walkdir::WalkDir;
 use self::feedback::*;
 use self::lexer::*;
 use self::parser::*;
+use self::compile::c;
 
 pub static SRC_FOLDER: &str = "src";
 
@@ -22,8 +23,6 @@ enum PathOrFile {
 
 /// The `c` mode compiles the code into C.
 pub fn to_c() -> Result<(), Feedback> {
-	use self::compile::c;
-
 	for file in WalkDir::new(SRC_FOLDER).into_iter().filter_map(|x| x.ok()) {
 		if !file.metadata().unwrap().is_file() {
 			continue;
@@ -33,8 +32,6 @@ pub fn to_c() -> Result<(), Feedback> {
 	}
 
 	//text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
-
-	c::utils::utils_file()?;
 
 	Ok(())
 }
@@ -49,8 +46,6 @@ fn filename_to_c(file_path: &Path) -> Result<(), Feedback> {
 }
 
 fn text_to_c(text: &str, path_or_file: PathOrFile) -> Result<(), Feedback> {
-	use self::compile::c;
-	
 	let tokens = match &path_or_file {
 		PathOrFile::Path(path) => Lexer::parse(text, Some(path))?,
 		PathOrFile::Filename(_) => Lexer::parse(text, None)?

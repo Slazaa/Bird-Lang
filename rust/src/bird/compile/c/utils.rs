@@ -1,51 +1,25 @@
-use std::path::Path;
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use crate::bird::constants::compile::PRIMITIVE_PREFIX;
 
-use crate::bird::feedback::{Feedback, Error};
-
-use super::OUTPUT_FOLDER;
-
-pub fn utils_file() -> Result<(), Feedback> {
-	if !Path::new(&format!("{}/bird", OUTPUT_FOLDER)).exists() && fs::create_dir(&format!("{}/bird", OUTPUT_FOLDER)).is_err() {
-		return Err(Error::unspecified(&format!("Failed creating '{}/bird' directory", OUTPUT_FOLDER)));
-	}
-
-	let mut types_file = match OpenOptions::new()
-		.write(true)
-		.truncate(true)
-		.create(true)
-		.open(&format!("{}/bird/c_utils.h", OUTPUT_FOLDER))
-	{
-		Ok(x) => x,
-		Err(_) => return Err(Error::unspecified("Failed creating 'bird/c_utils.h' file")) 
-	};
-
-	if write!(types_file, "\
-#ifndef BIRD_C_UTILS_H
-#define BIRD_C_UTILS_H
-
-// Types
-typedef enum {{ false, true }} bool;
-
-typedef char i8;
-typedef short i16;
-typedef long i32;
-typedef long long i64;
-
-typedef unsigned int uint;
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned long u32;
-typedef unsigned long long u64;
-
-typedef float f32;
-typedef double f64;
-
-#endif\
-		").is_err() {
-			return Err(Error::unspecified("Failed writing to 'bird/types.h' file"));
-		}
-
-	Ok(())
+pub fn utils() -> String {
+    format!(
+        "\
+typedef char {PRIMITIVE_PREFIX}i8;\
+typedef short {PRIMITIVE_PREFIX}i16;\
+typedef long {PRIMITIVE_PREFIX}i32;\
+typedef long long {PRIMITIVE_PREFIX}i64;\
+\
+typedef unsigned int {PRIMITIVE_PREFIX}uint;\
+typedef unsigned char {PRIMITIVE_PREFIX}u8;\
+typedef unsigned short {PRIMITIVE_PREFIX}u16;\
+typedef unsigned long {PRIMITIVE_PREFIX}u32;\
+typedef unsigned long long {PRIMITIVE_PREFIX}u64;\
+\
+typedef float {PRIMITIVE_PREFIX}f32;\
+typedef double {PRIMITIVE_PREFIX}f64;\
+\
+typedef u32 {PRIMITIVE_PREFIX}char;\
+\
+typedef enum {{ false, true }} {PRIMITIVE_PREFIX}bool;\
+"
+    )
 }
