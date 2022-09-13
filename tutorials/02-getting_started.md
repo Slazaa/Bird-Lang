@@ -1,13 +1,15 @@
 # Getting Started
+<!-- TODO -->
 
 ## Instalation
+<!-- TODO -->
 
-## Hello, World!
+## Hello World
 ```bird
 import bird::io::Console
 
 func main()
 {
-	Console.output_line("Hello, World!")
+	Console.output("Hello, World!\n")
 }
 ```

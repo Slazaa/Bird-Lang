@@ -23,7 +23,7 @@ func main()
 }
 ```
 
-You cannot read from a variable that has not been initialized
+Note that you cannot read from a variable that has not been asigned a value.
 For instance, this code is invalid:
 
 ```bird
@@ -32,32 +32,27 @@ import bird::io::Console
 func main()
 {
 	var x: int
-	Console.output_line(x.parse<String>().unwrap()) # We are reading from 'x' but it has no value
+	Console.output_line(x.to_str()) # We are reading from 'x', but it has no value
 }
 ```
 
-## Data Types
+## Constants
+Constants are variable with a value that cannot be changed.
+They are written as followed:
 
-### Scalar
-| Type  | Description |
-|-------|-------------|
-| bool  |             |
-| int   |             |
-| uint  |             |
-| float |             |
+```bird
+func main()
+{
+	const my_const: int = 10
+}
+```
 
-Numbers can be separated with a an underscore `_` as a visual separator so numbers are easier to read such as `1_000_000`.
-Numbers can be represented under different bases wich are:
+So the following code is invalid:
 
-| Base    | Example     |
-|---------|-------------|
-| Decimal | 42          |
-| Hex     | 0xAF        |
-| Octal   | 0o53        |
-| Binary  | 0b0110_1110 |
-
-### Compund
-| Type  | Description |
-|-------|-------------|
-| tuple |             |
-| array |             |
+```bird
+func main()
+{
+	const my_const: int = 10
+	my_const = 25 # We try to change the value of a constant, wich is not allowed
+}
+```

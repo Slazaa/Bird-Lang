@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 use std::fs::OpenOptions;
 use std::fs::{self, File};
 use std::io::Write as _;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::bird::constants::compile::FUNC_PREFIX;
 use crate::bird::feedback::*;
@@ -19,8 +19,8 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn compile(ast: &Node, file_path: &Path) -> Result<(), Feedback> {
-        let mut output = file_path.to_path_buf();
+    pub fn compile(ast: &Node, file_path: &Path, output: &str) -> Result<(), Feedback> {
+        let mut output = PathBuf::from(output);
         let parent_folder = output
             .parent()
             .ok_or_else(|| Error::invalid_syntax(None, "Invalid path"))?;
