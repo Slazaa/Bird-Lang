@@ -74,7 +74,7 @@ impl Parser {
 	pub fn parse(tokens: &[Token]) -> Result<Node, Feedback> {
 		let current_token = match tokens.first() {
 			Some(x) => x.clone(),
-			None => return Ok(Node::Program(Box::new(Node::block(vec![])))),
+			None => return Ok(Node::Program(Box::new(Node::block(vec![]))))
 		};
 
 		let mut parser = Self {
@@ -171,7 +171,7 @@ impl Parser {
 					"struct" | "type" | "var"
 				),
 				_ => false
-			},
+			}
 			_ => match self.current_token().token_type() {
 				TokenType::Literal | TokenType::Identifier | TokenType::Operator => true,
 				TokenType::Separator => matches!(self.current_token().symbol(), "("),
@@ -204,7 +204,7 @@ impl Parser {
 			TokenType::Separator => match self.current_token().symbol() {
 				"(" => self.assignment(),
 				_ => todo!()
-			},
+			}
 			TokenType::Keyword => match self.current_token().symbol() {
 				"func"   => self.func_item(),
 				"if"     => self.if_stmt(),
@@ -214,7 +214,7 @@ impl Parser {
 				"type"   => self.type_item(),
 				"var"    => self.var_item(),
 				_        => todo!()
-			},
+			}
 		}
 	}
 
@@ -246,7 +246,7 @@ impl Parser {
 
 					continue;
 				}
-				_ => (),
+				_ => ()
 			}
 
 			let statement = self.eval()?;
@@ -265,20 +265,11 @@ impl Parser {
 
 	fn literal(&mut self) -> Result<Node, Feedback> {
 		let res = match self.current_token().token_type() {
-			TokenType::Literal => {
-				Node::literal(self.current_token().symbol(), self.current_token().pos())
-			}
-			_ => {
-				return Err(Error::expected(
-					self.current_token().pos(),
-					"literal",
-					Some(&format!("'{}'", self.current_token().symbol())),
-				))
-			}
+			TokenType::Literal => Node::literal(self.current_token().symbol(), self.current_token().pos()),
+			_ => return Err(Error::expected(self.current_token().pos(), "literal", Some(&format!("'{}'", self.current_token().symbol()))))
 		};
 
 		self.advance(None).unwrap_or(());
-
 		Ok(res)
 	}
 
@@ -307,9 +298,7 @@ impl Parser {
 
 	fn operator(&mut self) -> Result<Node, Feedback> {
 		let res = match self.current_token().token_type() {
-			TokenType::Operator => {
-				Node::operator(self.current_token().symbol(), self.current_token().pos())
-			}
+			TokenType::Operator => Node::operator(self.current_token().symbol(), self.current_token().pos()),
 			_ => return Err(Error::expected(self.current_token().pos(), "operator", Some(&format!("'{}'", self.current_token().symbol()))))
 		};
 
@@ -338,7 +327,7 @@ impl Parser {
 
 		match &mut res {
 			Node::BinExpr { wrapped, .. } | Node::UnaryExpr { wrapped, .. } => *wrapped = true,
-			_ => (),
+			_ => ()
 		}
 
 		Ok(res)
@@ -348,12 +337,12 @@ impl Parser {
 		let left = match self.current_token().token_type() {
 			TokenType::Literal => self.literal()?,
 			TokenType::Identifier => self.func_call()?,
-			_ => self.eval()?,
+			_ => self.eval()?
 		};
 
 		let operator = match self.current_token().token_type() {
 			TokenType::Operator => self.operator()?,
-			_ => return Ok(left),
+			_ => return Ok(left)
 		};
 
 		Ok(Node::BinExpr { operator: Box::new(operator), left: Box::new(left), right: Box::new(self.bin_expr()?), wrapped: false })
@@ -389,7 +378,7 @@ impl Parser {
 				*self.next_pub_mut() = None;
 				true
 			}
-			None => false,
+			None => false
 		};
 
 		if let Err(Some(feedback)) = self.advance(Some("identifier")) {
@@ -415,31 +404,29 @@ impl Parser {
 
 		match self.current_token().token_type() {
 			TokenType::Separator if self.current_token().symbol() == ")" => (),
-			_ => loop {
-				self.skip_new_lines();
+			_ => {
+				loop {
+					self.skip_new_lines();
 
-				let (identifier, field_type) = self.var_def()?;
+					let (identifier, field_type) = self.var_def()?;
+					params.push(Node::Field { identifier: Box::new(identifier), filed_type: Box::new(field_type) });
 
-				params.push(Node::Field {
-					identifier: Box::new(identifier),
-					filed_type: Box::new(field_type),
-				});
-
-				if let Err(Some(feedback)) = self.advance(Some("',' or ')'")) {
-					return Err(feedback);
-				}
-
-				self.skip_new_lines();
-
-				match self.current_token().symbol() {
-					"," => {
-						if let Err(Some(feedback)) = self.advance(Some("identifier")) {
-							return Err(feedback);
-						}
+					if let Err(Some(feedback)) = self.advance(Some("',' or ')'")) {
+						return Err(feedback);
 					}
-					")" => break,
-					_ => return Err(Error::expected(self.current_token().pos(), "',' or ')'", Some(&format!("'{}'", self.current_token().symbol()))))
-				};
+
+					self.skip_new_lines();
+
+					match self.current_token().symbol() {
+						"," => {
+							if let Err(Some(feedback)) = self.advance(Some("identifier")) {
+								return Err(feedback);
+							}
+						}
+						")" => break,
+						_ => return Err(Error::expected(self.current_token().pos(), "',' or ')'", Some(&format!("'{}'", self.current_token().symbol()))))
+					};
+				}
 			}
 		}
 
@@ -477,7 +464,6 @@ impl Parser {
 				}
 
 				let parent_node = self.parent_node().clone();
-
 				*self.parent_node_mut() = func_item.clone();
 
 				if let Node::FuncItem { body, .. } = &mut func_item {
@@ -533,10 +519,7 @@ impl Parser {
 
 				if let Node::StructItem { fields, .. } = &mut struct_item {
 					let (identifier, field_type) = self.var_def()?;
-					fields.push(Node::Field {
-						identifier: Box::new(identifier),
-						filed_type: Box::new(field_type),
-					});
+					fields.push(Node::Field { identifier: Box::new(identifier), filed_type: Box::new(field_type) });
 				}
 
 				if let Err(Some(feedback)) = self.advance(Some("new line or '}'")) {
@@ -548,7 +531,7 @@ impl Parser {
 					"}" => break,
 					_ => return Err(Error::expected(self.current_token().pos(), "new line or '}'", Some(&format!("'{}'", self.current_token().symbol()))))
 				};
-			},
+			}
 			TokenType::Separator if self.current_token().symbol() == "(" => todo!(),
 			_ => todo!()
 		}
