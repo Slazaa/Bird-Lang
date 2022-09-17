@@ -1,20 +1,20 @@
 pub func size_of<T>() -> uint
 {
-	switch (T)
+	switch T
 	{
-		case (bool || int8 || uint8)
+		case bool || int8 || uint8
 		{
 			return 1
 		}
-		case (int16 || uint16)
+		case int16 || uint16
 		{
 			return 2
 		}
-		case (int32 || uint32)
+		case int32 || uint32
 		{
 			return 4
 		}
-		case (int64 || uint64)
+		case int64 || uint64
 		{
 			return 8
 		}

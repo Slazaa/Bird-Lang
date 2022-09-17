@@ -1,8 +1,8 @@
 use crate::bird::constants::compile::PRIMITIVE_PREFIX;
 
 pub fn utils() -> String {
-    format!(
-        "\
+	format!(
+		"\
 typedef char {PRIMITIVE_PREFIX}i8;\
 typedef short {PRIMITIVE_PREFIX}i16;\
 typedef long {PRIMITIVE_PREFIX}i32;\
@@ -21,5 +21,5 @@ typedef u32 {PRIMITIVE_PREFIX}char;\
 \
 typedef enum {{ false, true }} {PRIMITIVE_PREFIX}bool;\
 "
-    )
+	)
 }

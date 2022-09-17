@@ -27,6 +27,6 @@ impl Allocator for BirdAlloc
 
 	pub fn free(ptr: *mut T)
 	{
-		free(ptr)
+		free(ptr as *mut c_void)
 	}
 }

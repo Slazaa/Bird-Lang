@@ -17,48 +17,46 @@ use self::parser::*;
 pub static SRC_FOLDER: &str = "src";
 
 enum PathOrFile {
-    Path(PathBuf),
-    Filename(String),
+	Path(PathBuf),
+	Filename(String)
 }
 
 /// The `c` mode compiles the code into C.
 pub fn to_c(output: &str) -> Result<(), Feedback> {
-    for file in WalkDir::new(SRC_FOLDER).into_iter().filter_map(|x| x.ok()) {
-        if !file.metadata().unwrap().is_file() {
-            continue;
-        }
+	for file in WalkDir::new(SRC_FOLDER).into_iter().filter_map(|x| x.ok()) {
+		if !file.metadata().unwrap().is_file() {
+			continue;
+		}
 
-        filename_to_c(file.path(), output)?;
-    }
+		filename_to_c(file.path(), output)?;
+	}
 
-    //text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
+	//text_to_c(&c::array::array(), PathOrFile::Filename("array.bird".to_owned()))?;
 
-    Ok(())
+	Ok(())
 }
 
 fn filename_to_c(file_path: &Path, output: &str) -> Result<(), Feedback> {
-    let text = match fs::read_to_string(file_path) {
-        Ok(x) => x,
-        Err(_) => return Err(Error::no_file_or_dir(file_path.to_str().unwrap())),
-    };
+	let text = match fs::read_to_string(file_path) {
+		Ok(x) => x,
+		Err(_) => return Err(Error::no_file_or_dir(file_path.to_str().unwrap())),
+	};
 
-    text_to_c(&text, PathOrFile::Path(file_path.to_path_buf()), output)
+	text_to_c(&text, PathOrFile::Path(file_path.to_path_buf()), output)
 }
 
 fn text_to_c(text: &str, path_or_file: PathOrFile, output: &str) -> Result<(), Feedback> {
-    let tokens = match &path_or_file {
-        PathOrFile::Path(path) => Lexer::parse(text, Some(path))?,
-        PathOrFile::Filename(_) => Lexer::parse(text, None)?,
-    };
+	let tokens = match &path_or_file {
+		PathOrFile::Path(path) => Lexer::parse(text, Some(path))?,
+		PathOrFile::Filename(_) => Lexer::parse(text, None)?,
+	};
 
-    let ast = Parser::parse(&tokens)?;
+	let ast = Parser::parse(&tokens)?;
 
-    match &path_or_file {
-        PathOrFile::Path(path) => c::Compiler::compile(&ast, path, output)?,
-        PathOrFile::Filename(filename) => {
-            c::Compiler::compile(&ast, &Path::new("bird/{}").join(filename), output)?
-        }
-    }
+	match &path_or_file {
+		PathOrFile::Path(path) => c::Compiler::compile(&ast, path, output)?,
+		PathOrFile::Filename(filename) => c::Compiler::compile(&ast, &Path::new("bird/{}").join(filename), output)?
+	}
 
-    Ok(())
+	Ok(())
 }

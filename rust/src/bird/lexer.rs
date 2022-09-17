@@ -80,7 +80,7 @@ impl Position {
 pub struct Token {
 	token_type: TokenType,
 	symbol: String,
-	pos: (Position, Position),
+	pos: (Position, Position)
 }
 
 impl Token {
@@ -94,7 +94,7 @@ impl Token {
 		Self {
 			token_type,
 			symbol: symbol.to_owned(),
-			pos: (pos_start.clone(), pos_end.clone()),
+			pos: (pos_start.clone(), pos_end.clone())
 		}
 	}
 
@@ -321,7 +321,6 @@ impl Lexer {
 		}
 
 		self.advance().unwrap_or(());
-
 		Ok(Token::new(TokenType::Literal, &res, &pos_start, Some(&self.pos.clone())))
 	}
 
@@ -402,7 +401,6 @@ impl Lexer {
 		let res = Token::new(TokenType::Separator, &String::from(self.current_char), &pos_start, Some(&pos_start));
 
 		self.advance().unwrap_or(());
-
 		Ok(res)
 	}
 }
