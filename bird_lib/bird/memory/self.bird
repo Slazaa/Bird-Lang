@@ -20,5 +20,5 @@ pub func size_of<T>() -> uint
 		}
 	}
 
-	todo(Some("Other types are not implemented yet"))
+	todo("Other types are not implemented yet")
 }
