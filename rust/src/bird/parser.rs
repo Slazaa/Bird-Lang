@@ -18,7 +18,7 @@ pub enum Node {
 	// ----------
 	Field { identifier: Box<Node>, filed_type: Box<Node>},
 	// ----------
-	FuncProto { public: bool, identifier: Box<Node>, params: Vec<Node>, return_type: Box<Node> },
+	FuncProto { public: bool, identifier: Box<Node>, generics: Vec<Node>, params: Vec<Node>, return_type: Box<Node> },
 	// Items
 	FuncItem { proto: Box<Node>, body: Box<Node> },
 	VarItem { public: bool, identifier: Box<Node>, var_type: Box<Node>, value: Box<Option<Node>> },
@@ -371,8 +371,8 @@ impl Parser {
 
 		Ok((identifier, self.type_node()?))
 	}
-
-	fn func_item(&mut self) -> Result<Node, Feedback> {
+    
+    fn func_proto(&mut self) -> Result<Node, Feedback> {
 		let public = match self.next_pub() {
 			Some(_) => {
 				*self.next_pub_mut() = None;
@@ -386,20 +386,36 @@ impl Parser {
 		}
 
 		let identifier = self.identifier(true)?;
+        let mut generics = Vec::new();
 
 		self.skip_new_lines();
 
-		match self.current_token().token_type() {
-			TokenType::Separator if self.current_token().symbol() == "(" => (),
-			_ => return Err(Error::expected(self.current_token().pos(), "'('", Some(&format!("'{}'", self.current_token().symbol()))))
+		match self.current_token().symbol() {
+			"(" => (),
+            "<" => {
+                loop {
+                    self.skip_new_lines();
+                    generics.push(self.identifier(true)?);
+
+                    match self.current_token().symbol() {
+                        "," => {
+                            if let Err(Some(feedback)) = self.advance(Some("identifier")) {
+                                return Err(feedback);
+                            }
+                        }
+                        ">" => break,
+                        _ => return Err(Error::expected(self.current_token().pos(), "',' or '>'", Some(&format!("'{}'", self.current_token().symbol()))))
+                    }
+                }
+            }
+			_ => return Err(Error::expected(self.current_token().pos(), "'(' or '<'", Some(&format!("'{}'", self.current_token().symbol()))))
 		}
 
-		if let Err(Some(feedback)) = self.advance(Some("'('")) {
+		if let Err(Some(feedback)) = self.advance(Some("'(' or '<'")) {
 			return Err(feedback);
 		}
 
 		self.skip_new_lines();
-
 		let mut params = Vec::new();
 
 		match self.current_token().token_type() {
@@ -430,7 +446,7 @@ impl Parser {
 			}
 		}
 
-		let mut func_proto = Node::FuncProto { public, identifier: Box::new(identifier), params, return_type: Box::new(Node::identifier("void", self.current_token().pos())) };
+		let mut func_proto = Node::FuncProto { public, identifier: Box::new(identifier), generics: vec![], params, return_type: Box::new(Node::identifier("void", self.current_token().pos())) };
 
 		if let Err(Some(feedback)) = self.advance(Some("'->' or '{'")) {
 			return Err(feedback);
@@ -446,7 +462,7 @@ impl Parser {
 					*return_type = Box::new(self.type_node()?);
 				}
 
-				if let Err(Some(feedback)) = self.advance(Some("'->' or '{'")) {
+				if let Err(Some(feedback)) = self.advance(Some("'{'")) {
 					return Err(feedback);
 				}
 			}
@@ -454,8 +470,12 @@ impl Parser {
 		};
 
 		self.skip_new_lines();
+        Ok(func_proto)
+    }
 
-		let mut func_item = Node::FuncItem { proto: Box::new(func_proto.clone()), body: Box::new(Node::block(vec![])) };
+	fn func_item(&mut self) -> Result<Node, Feedback> {
+        let func_proto = self.func_proto()?;
+        let mut func_item = Node::FuncItem { proto: Box::new(self.func_proto()?), body: Box::new(Node::block(vec![])) };
 
 		match self.current_token().token_type() {
 			TokenType::Separator if self.current_token().symbol() == "{" => {
@@ -464,11 +484,12 @@ impl Parser {
 				}
 
 				let parent_node = self.parent_node().clone();
-				*self.parent_node_mut() = func_item.clone();
 
-				if let Node::FuncItem { body, .. } = &mut func_item {
-					*body = Box::new(self.block()?);
-				}
+				*self.parent_node_mut() = func_item.clone();
+                
+                if let Node::FuncItem { body, .. } = &mut func_item {
+				    *body = Box::new(self.block()?);
+                }
 
 				*self.parent_node_mut() = parent_node;
 
