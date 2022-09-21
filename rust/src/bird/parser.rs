@@ -158,7 +158,7 @@ impl Parser {
 		}
 	}
 
-	/// Check if the current token is in the right scope
+	/// Check if the current token is in the right scope.
 	fn check_scope(&self) -> bool {
 		match self.parent_node() {
 			Node::Program { .. } => match self.current_token().token_type() {
@@ -183,6 +183,7 @@ impl Parser {
 		}
 	}
 
+	/// Evaluate a sequence of token and create the corresponding node.
 	fn eval(&mut self) -> Result<Node, Feedback> {
 		if let Some(next_pub) = self.next_pub() {
 			match self.current_token().symbol() {

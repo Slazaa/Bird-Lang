@@ -241,7 +241,7 @@ impl Lexer {
 		Token::new(TokenType::Literal, &res, &pos_start, Some(&pos_end))
 	}
 
-	fn escape_sequance(&mut self) -> Result<char, Feedback> {
+	fn escape_sequence(&mut self) -> Result<char, Feedback> {
 		let pos_start = self.pos.clone();
 
 		Ok(match self.current_char {
@@ -304,7 +304,7 @@ impl Lexer {
 						return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
 					}
 
-					res.push(self.escape_sequance()?);
+					res.push(self.escape_sequence()?);
 				} else {
 					res.push(self.current_char);
 				}
@@ -342,7 +342,7 @@ impl Lexer {
 					return Err(Error::expected((&pos_start, &self.pos.clone()), "char", None));
 				}
 
-				res.push(self.escape_sequance()?);
+				res.push(self.escape_sequence()?);
 			} else {
 				res.push(self.current_char);
 			}
