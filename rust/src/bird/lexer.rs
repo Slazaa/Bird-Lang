@@ -225,12 +225,12 @@ impl Lexer {
 					}
 	
 					dot_count += 1;
+					res.push(self.current_char);
 				}
 				'_' => todo!(),
-				_ => ()
+				_ => res.push(self.current_char)
 			}
 
-			res.push(self.current_char);
 			pos_end = self.pos.clone();
 			
 			if self.advance().is_err() {
