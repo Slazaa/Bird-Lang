@@ -218,17 +218,19 @@ impl Lexer {
 				break;
 			}
 
-			if self.current_char == '.' {
-				if dot_count == 1 {
-					break;
+			match self.current_char {
+				'.' => {
+					if dot_count == 1 {
+						break;
+					}
+	
+					dot_count += 1;
 				}
-
-				dot_count += 1;
-				res.push('.');
-			} else {
-				res.push(self.current_char);
+				'_' => todo!(),
+				_ => ()
 			}
 
+			res.push(self.current_char);
 			pos_end = self.pos.clone();
 			
 			if self.advance().is_err() {
@@ -243,11 +245,9 @@ impl Lexer {
 		let pos_start = self.pos.clone();
 
 		Ok(match self.current_char {
-			'b' => 0x08 as char,
-			'n' => 0x0A as char,
-			'r' => 0x0D as char,
-			't' => 0x09 as char,
-			'v' => 0x0B as char,
+			'n' => '\n',
+			'r' => '\r',
+			't' => '\t',
 			'\\' | '\'' | '"' => self.current_char,
 			_ => return Err(Error::invalid_syntax(Some((&pos_start, &self.pos)), &format!("Invalid escape sequance \\{}", self.current_char)))
 		})

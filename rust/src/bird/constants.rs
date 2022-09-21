@@ -1,14 +1,28 @@
-pub static SEPARATORS: &str = "(){}[]<>,\n";
+pub static SEPARATORS: &str = "(){}[],\n";
 
 pub static OPERATORS: [&str; 34] = [
+	// Arithmetic
 	"+", "-", "*", "/", "%",
+
+	// Relational
 	"==", "!=", ">", "<", ">=", "<=",
+
+	// Logical
 	"&&", "||", "!",
+
+	// Bitwise
 	"&", "|", "^", "~", "<<", ">>",
+
+	// Assignment
 	"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|=",
+
+	// Pointer
+	// "&", "*",
+
 	":",
 	"->",
 	"::",
+
 ];
 
 pub static OPERATOR_CHARS: &str = "+-*/%=!><&|^~:";
