@@ -13,14 +13,13 @@ pub static OPERATORS: [&str; 34] = [
 
 pub static OPERATOR_CHARS: &str = "+-*/%=!><&|^~:";
 
-pub static KEYWORDS: [&str; 19] = [
-	"as"    , "break"   , "case"  ,
-	"const" , "continue", "else"  ,
-	"enum"  , "func"    , "if"    ,
-	"impl"  , "loop"    , "match" ,
-	"mut"   , "pub"     , "return",
-	"struct", "type"    , "use"   ,
-	"var"
+pub static KEYWORDS: [&str; 18] = [
+	"break"   , "case"  , "const" ,
+	"continue", "else"  , "enum"  ,
+	"func"    , "if"    , "impl"  ,
+	"loop"    , "match" , "mut"   ,
+	"pub"     , "return", "struct",
+	"type"    , "use"   , "var"
 ];
 
 pub mod compile {
