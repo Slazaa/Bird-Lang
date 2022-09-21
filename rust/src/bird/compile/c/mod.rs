@@ -246,7 +246,7 @@ impl Compiler {
 		write!(&mut res, "typedef struct {}{{", eval_identifier).unwrap();
 
 		for field in fields {
-			res.push_str(&format!("{};", self.eval(field)?));
+			write!(&mut res, "{};", self.eval(field)?).unwrap();
 		}
 
 		write!(&mut res, "}}{};", eval_identifier).unwrap();

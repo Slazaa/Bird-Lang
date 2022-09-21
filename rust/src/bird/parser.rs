@@ -137,10 +137,7 @@ impl Parser {
 			return Ok(());
 		}
 
-		Err(match expected {
-			Some(expected) => Some(Error::expected(self.current_token().pos(), expected, None)),
-			None => None
-		})
+		Err(expected.map(|e| Error::expected(self.current_token().pos(), e, None)))
 	}
 
 	/// Advances the current `Token` util it is not a new line `Token`.
@@ -280,7 +277,7 @@ impl Parser {
 					let id = self.current_token().symbol().to_owned();
 					let existing_ids: Vec<&String> = self.scoped_ids.iter().flatten().collect();
 
-					if existing_ids.iter().find(|x| ***x == id).is_some() {
+					if existing_ids.iter().any(|x| **x == id) {
 						return Err(Error::redefinition(self.current_token().pos(), &id));
 					}
 
