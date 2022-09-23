@@ -369,8 +369,8 @@ impl Parser {
 
 		Ok((identifier, self.type_node()?))
 	}
-    
-    fn func_proto(&mut self) -> Result<Node, Feedback> {
+	
+	fn func_proto(&mut self) -> Result<Node, Feedback> {
 		let public = match self.next_pub() {
 			Some(_) => {
 				*self.next_pub_mut() = None;
@@ -384,28 +384,28 @@ impl Parser {
 		}
 
 		let identifier = self.identifier(true)?;
-        let mut generics = Vec::new();
+		let mut generics = Vec::new();
 
 		self.skip_new_lines();
 
 		match self.current_token().symbol() {
 			"(" => (),
-            "<" => {
-                loop {
-                    self.skip_new_lines();
-                    generics.push(self.identifier(true)?);
+			"<" => {
+				loop {
+					self.skip_new_lines();
+					generics.push(self.identifier(true)?);
 
-                    match self.current_token().symbol() {
-                        "," => {
-                            if let Err(Some(feedback)) = self.advance(Some("identifier")) {
-                                return Err(feedback);
-                            }
-                        }
-                        ">" => break,
-                        _ => return Err(Error::expected(self.current_token().pos(), "',' or '>'", Some(&format!("'{}'", self.current_token().symbol()))))
-                    }
-                }
-            }
+					match self.current_token().symbol() {
+						"," => {
+							if let Err(Some(feedback)) = self.advance(Some("identifier")) {
+								return Err(feedback);
+							}
+						}
+						">" => break,
+						_ => return Err(Error::expected(self.current_token().pos(), "',' or '>'", Some(&format!("'{}'", self.current_token().symbol()))))
+					}
+				}
+			}
 			_ => return Err(Error::expected(self.current_token().pos(), "'(' or '<'", Some(&format!("'{}'", self.current_token().symbol()))))
 		}
 
@@ -468,12 +468,12 @@ impl Parser {
 		};
 
 		self.skip_new_lines();
-        Ok(func_proto)
-    }
+		Ok(func_proto)
+	}
 
 	fn func_item(&mut self) -> Result<Node, Feedback> {
-        let func_proto = self.func_proto()?;
-        let mut func_item = Node::FuncItem { proto: Box::new(self.func_proto()?), body: Box::new(Node::block(vec![])) };
+		let func_proto = self.func_proto()?;
+		let mut func_item = Node::FuncItem { proto: Box::new(self.func_proto()?), body: Box::new(Node::block(vec![])) };
 
 		match self.current_token().token_type() {
 			TokenType::Separator if self.current_token().symbol() == "{" => {
@@ -484,10 +484,10 @@ impl Parser {
 				let parent_node = self.parent_node().clone();
 
 				*self.parent_node_mut() = func_item.clone();
-                
-                if let Node::FuncItem { body, .. } = &mut func_item {
-				    *body = Box::new(self.block()?);
-                }
+				
+				if let Node::FuncItem { body, .. } = &mut func_item {
+					*body = Box::new(self.block()?);
+				}
 
 				*self.parent_node_mut() = parent_node;
 
