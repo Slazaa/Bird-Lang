@@ -1,9 +1,7 @@
 pub mod utils;
 
 use std::fmt::Write as _;
-use std::fs::OpenOptions;
-use std::fs::{self, File};
-use std::io::Write as _;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::bird::constants::compile::FUNC_PREFIX;
@@ -14,7 +12,6 @@ use crate::bird::SRC_FOLDER;
 pub static OUTPUT_FOLDER: &str = "c";
 
 pub struct Compiler {
-	main_file: File,
 	func_protos: Vec<Node>
 }
 
@@ -46,38 +43,25 @@ impl Compiler {
 			}
 		}
 
-		let main_file = match OpenOptions::new()
-			.write(true)
-			.truncate(true)
-			.create(true)
-			.open(output)
-		{
-			Ok(x) => x,
-			Err(_) => return Err(Error::unspecified("Failed creating 'main.c' file")),
-		};
-
 		let mut compiler = Self {
-			main_file,
 			func_protos: Vec::new(),
 		};
 
-		if write!(compiler.main_file, "{}", self::utils::utils()).is_err() {
-			return Err(Error::unspecified("Failed writing to 'main.c' file"));
-		}
+		let mut raw_src = String::new();
+		raw_src.push_str(&self::utils::utils());
 
 		let res = compiler.eval(ast)?;
 		let func_protos = compiler.func_protos.clone();
 
 		for proto in func_protos {
 			let proto = compiler.eval(&proto)?;
-
-			if write!(compiler.main_file, "{}", proto).is_err() {
-				return Err(Error::unspecified("Failed writing to 'main.c' file"));
-			}
+			raw_src.push_str(&proto);
 		}
 
-		if write!(compiler.main_file, "{}int main(int argc, char** argv){{{}main();return 0;}}", res, FUNC_PREFIX).is_err() {
-			return Err(Error::unspecified("Failed writing to 'main.c' file"));
+		write!(raw_src, "{}int main(int argc, char** argv){{{}main();return 0;}}", res, FUNC_PREFIX).unwrap();
+
+		if fs::write(output, c_formatter::format(&raw_src)).is_err() {
+			return Err(Error::unspecified("Failed to write fromatted code to file"));
 		}
 
 		Ok(())

@@ -125,11 +125,11 @@ impl Error {
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, None, &format!("No such file or directory '{}'", filename))
 	}
-
+/*
 	pub fn redefinition(position: (&Position, &Position), identifier: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error,Some(position),&format!("Redefinition of '{}'", identifier))
 	}
-
+*/
 	pub fn unexpected(position: (&Position, &Position), unexpected: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error,Some(position),&format!("Unexpected {}", unexpected))
 	}

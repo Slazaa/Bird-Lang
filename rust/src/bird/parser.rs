@@ -271,22 +271,9 @@ impl Parser {
 		Ok(res)
 	}
 
-	fn identifier(&mut self, first_occur: bool) -> Result<Node, Feedback> {
+	fn identifier(&mut self) -> Result<Node, Feedback> {
 		let res = match self.current_token().token_type() {
-			TokenType::Identifier => {
-				if first_occur {
-					let id = self.current_token().symbol().to_owned();
-					let existing_ids: Vec<&String> = self.scoped_ids.iter().flatten().collect();
-
-					if existing_ids.iter().any(|x| **x == id) {
-						return Err(Error::redefinition(self.current_token().pos(), &id));
-					}
-
-					self.scoped_ids.last_mut().unwrap().push(id);
-				}
-
-				Node::identifier(self.current_token().symbol(), self.current_token().pos())
-			}
+			TokenType::Identifier => Node::identifier(self.current_token().symbol(), self.current_token().pos()),
 			_ => return Err(Error::expected(self.current_token().pos(), "identifier", Some(&format!("'{}'", self.current_token().symbol()))))
 		};
 
@@ -356,7 +343,7 @@ impl Parser {
 	}
 
 	fn var_def(&mut self) -> Result<(Node, Node), Feedback> {
-		let identifier = self.identifier(false)?;
+		let identifier = self.identifier()?;
 
 		match self.current_token().token_type() {
 			TokenType::Operator if self.current_token().symbol() == ":" => (),
@@ -383,7 +370,7 @@ impl Parser {
 			return Err(feedback);
 		}
 
-		let identifier = self.identifier(true)?;
+		let identifier = self.identifier()?;
 		let mut generics = Vec::new();
 
 		self.skip_new_lines();
@@ -393,7 +380,7 @@ impl Parser {
 			"<" => {
 				loop {
 					self.skip_new_lines();
-					generics.push(self.identifier(true)?);
+					generics.push(self.identifier()?);
 
 					match self.current_token().symbol() {
 						"," => {
@@ -406,10 +393,10 @@ impl Parser {
 					}
 				}
 			}
-			_ => return Err(Error::expected(self.current_token().pos(), "'(' or '<'", Some(&format!("'{}'", self.current_token().symbol()))))
+			_ => return Err(Error::expected(self.current_token().pos(), "'(' or '<'", None))
 		}
 
-		if let Err(Some(feedback)) = self.advance(Some("'(' or '<'")) {
+		if let Err(Some(feedback)) = self.advance(Some("parameters or ')'")) {
 			return Err(feedback);
 		}
 
@@ -446,8 +433,8 @@ impl Parser {
 
 		let mut func_proto = Node::FuncProto { public, identifier: Box::new(identifier), generics: vec![], params, return_type: Box::new(Node::identifier("void", self.current_token().pos())) };
 
-		if let Err(Some(feedback)) = self.advance(Some("'->' or '{'")) {
-			return Err(feedback);
+		if self.advance(None).is_err() {
+			return Ok(func_proto);
 		}
 
 		match self.current_token().token_type() {
@@ -460,20 +447,17 @@ impl Parser {
 					*return_type = Box::new(self.type_node()?);
 				}
 
-				if let Err(Some(feedback)) = self.advance(Some("'{'")) {
-					return Err(feedback);
-				}
+				self.advance(None).unwrap_or(());
 			}
 			_ => ()
 		};
 
-		self.skip_new_lines();
 		Ok(func_proto)
 	}
 
 	fn func_item(&mut self) -> Result<Node, Feedback> {
 		let func_proto = self.func_proto()?;
-		let mut func_item = Node::FuncItem { proto: Box::new(self.func_proto()?), body: Box::new(Node::block(vec![])) };
+		let mut func_item = Node::FuncItem { proto: Box::new(func_proto.clone()), body: Box::new(Node::block(vec![])) };
 
 		match self.current_token().token_type() {
 			TokenType::Separator if self.current_token().symbol() == "{" => {
@@ -524,7 +508,7 @@ impl Parser {
 			return Err(feedback);
 		}
 
-		let identifier = self.identifier(true)?;
+		let identifier = self.identifier()?;
 		self.skip_new_lines();
 		let mut struct_item = Node::StructItem { public, identifier: Box::new(identifier), fields: vec![] };
 
@@ -572,7 +556,7 @@ impl Parser {
 			return Err(feedback);
 		}
 
-		let identifier = self.identifier(true)?;
+		let identifier = self.identifier()?;
 
 		match self.current_token().token_type() {
 			TokenType::Operator if self.current_token().symbol() == "=" => (),
@@ -645,7 +629,7 @@ impl Parser {
 	}
 
 	fn func_call(&mut self) -> Result<Node, Feedback> {
-		let identifier = self.identifier(false)?;
+		let identifier = self.identifier()?;
 
 		match self.current_token().symbol() {
 			"(" => (),

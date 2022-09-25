@@ -13,22 +13,22 @@ fn main() {
 			return;
 		}
 		1 => {
-			println!("{}",Error::invalid_syntax(None, "Expecting an output file").as_string());
+			println!("{}",Error::invalid_syntax(None, "Expecting an input file").as_string());
 			return;
 		}
 		_ => (),
 	}
 
-	if args.len() > 1 {
+	if args.len() > 2 {
 		println!("{}",Error::invalid_syntax(None, "Too much arguments were given").as_string());
 		return;
 	}
 
 	let mode = &args[0];
-	let output = &args[1];
+	let input = &args[1];
 
 	let result = match mode.as_str() {
-		"c" => bird::to_c(output),
+		"c" => bird::to_c(input),
 		_ => {
 			println!("{}",Error::invalid_syntax(None, &format!("Invalid mode '{}'", mode)).as_string());
 			return;
