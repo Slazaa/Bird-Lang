@@ -1,2 +1,2 @@
-rust/compiler/target
-rust/compiler/Cargo.lock
+compiler/rust/target
+compiler/rust/Cargo.lock
