@@ -97,6 +97,11 @@ impl Parser {
 		Ok(parser.parent_node)
 	}
 
+    pub fn lex_and_parse(src: &str) -> Result<Node, Feedback> {
+        let tokens = lexer::parse(src)?;
+        Ok(Self::parse(tokens)?)
+    }
+
 	/// Returns true if there is more token, else returns false
 	fn is_more_token(&self) -> bool {
 		self.token_index < self.tokens.len()
