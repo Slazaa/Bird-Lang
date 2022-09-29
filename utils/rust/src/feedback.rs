@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Write};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use super::lexer::{PathOrText, Position};
+use crate::position::Position;
 
 pub enum FeedbackType {
 	Error
@@ -10,11 +10,9 @@ pub enum FeedbackType {
 
 impl Display for FeedbackType {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let symbol = match self {
-			Self::Error => "Error",
-		};
-
-		write!(f, "{}", symbol)
+		write!(f, "{}", match self {
+			Self::Error => "Error"
+		})
 	}
 }
 
@@ -37,8 +35,8 @@ impl Feedback {
 		let mut result = String::new();
 		let line_string = format!("{}", pos_start.line() + 1);
 
-		if let PathOrText::Path(file_path) = pos_start.file_or_text() {
-			write!(result, "\n  --> {}:{}:{}", file_path.display(), line_string, pos_start.colomn() + 1).unwrap();
+		if let Some(file_path) = pos_start.file_path() {
+			write!(result, "\n  --> {}:{}:{}", file_path, line_string, pos_start.col() + 1).unwrap();
 		}
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ').collect();
@@ -49,8 +47,8 @@ impl Feedback {
 
 		let mut pipe_down = pipe.clone();
 
-		let line_text = match pos_start.file_or_text() {
-			PathOrText::Path(file_path) => {
+		let line_text = match pos_start.file_path() {
+			Some(file_path) => {
 				let file = File::open(file_path).unwrap();
 				let reader = BufReader::new(file);
 
@@ -59,17 +57,17 @@ impl Feedback {
 					.unwrap()
 					.unwrap()
 			}
-			PathOrText::Text(_) => todo!()
+			None => todo!()
 		};
 
-		for i in 0..pos_start.colomn() {
+		for i in 0..pos_start.col() {
 			match line_text.chars().nth(i as usize) {
 				Some(c) if c == '\t' => pipe_down.push('\t'),
 				_ => pipe_down.push(' ')
 			}
 		}
 
-		for _ in pos_start.colomn()..=pos_end.colomn() {
+		for _ in pos_start.col()..=pos_end.col() {
 			pipe_down.push('^');
 		}
 
