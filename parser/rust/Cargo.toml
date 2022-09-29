@@ -2,3 +2,7 @@
 name = "birdp"
 version = "0.1.0"
 edition = "2021"
+
+[dependencies]
+bird_utils = { git = "https://github.com/Slazaa/Bird-Lang" }
+lex = { git = "https://github.com/Slazaa/Rust-Lex" }

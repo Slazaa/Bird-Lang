@@ -1,3 +1,4 @@
+/*
 use crate::bird::feedback::*;
 use crate::bird::lexer::{Position, Token, TokenType};
 
@@ -764,5 +765,35 @@ impl Parser {
 		};
 
 		Ok(Node::TypePtr { hodling_type: Box::new(self.type_node()?), mutable })
+	}
+}
+
+pub fn parse(input: &str) -> Result<Node, Feedback> {
+	let lexer_gen = lex::LexerGen::new()
+
+	todo!();
+}
+*/
+
+pub fn parse(input: &str) {
+	let mut lexer_gen = lex::LexerGen::new();
+	lexer_gen.ignore(r"(^[ \t]+)").unwrap();
+	lexer_gen.add_vec(&[
+		("NL", r"^[\r\n]+"),
+		("ID", r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
+		("NUM", r"(^[0-9]+(\.[0-9]+)?)")
+	]).unwrap();
+
+	let lexer = lexer_gen.build();
+	let lexer_stream = lexer.lex(input);
+
+	for token in lexer_stream {
+		match token {
+			Ok(token) => println!("{:#?}", token),
+			Err((e, pos)) => {
+				println!("{} at {}", e, pos);
+				break;
+			} 
+		}
 	}
 }
