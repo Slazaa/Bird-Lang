@@ -775,25 +775,107 @@ pub fn parse(input: &str) -> Result<Node, Feedback> {
 }
 */
 
-pub fn parse(input: &str) {
-	let mut lexer_gen = lex::LexerGen::new();
-	lexer_gen.ignore(r"(^[ \t]+)").unwrap();
-	lexer_gen.add_vec(&[
-		("NL", r"^[\r\n]+"),
-		("ID", r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
-		("NUM", r"(^[0-9]+(\.[0-9]+)?)")
-	]).unwrap();
+use parse::*;
 
-	let lexer = lexer_gen.build();
-	let lexer_stream = lexer.lex(input);
+#[derive(Debug, Copy, Clone)]
+pub struct Expr {
+	pub value: f64
+}
 
-	for token in lexer_stream {
-		match token {
-			Ok(token) => println!("{:#?}", token),
-			Err((e, pos)) => {
-				println!("{} at {}", e, pos);
-				break;
-			} 
+#[derive(Debug, Clone)]
+pub enum Node {
+	Token(Token),
+	// ----------
+	Expr(Expr),
+	Program(Option<Expr>)
+}
+
+impl ASTNode for Node {
+	fn new_token(token: &Token) -> Self {
+		Self::Token(token.to_owned())
+	}
+
+	fn token(&self) -> Result<&Token, String> {
+		match self {
+			Self::Token(token) => Ok(token),
+			_ => Err("Node is not a token".to_owned())
 		}
 	}
+
+	fn is_token(&self) -> bool {
+		matches!(self, Self::Token(_))
+	}
+}
+
+fn expr_num(nodes: &[Node]) -> Result<Node, String> {
+	Ok(Node::Expr(Expr { value: nodes[0].token().unwrap().symbol().parse::<f64>().unwrap() }))
+}
+
+fn expr_op(nodes: &[Node]) -> Result<Node, String> {
+	let left = match &nodes[0] {
+		Node::Token(x) if x.name() == "NUM" => x,
+		_ => return Err(format!("Invalid node '{:?}'", nodes[0]))
+	};
+
+	let op = match &nodes[1] {
+		Node::Token(x) => x,
+		_ => return Err(format!("Invalid node '{:?}'", nodes[1]))
+	};
+
+	let right = match &nodes[2] {
+		Node::Expr(x) => x,
+		_ => return Err(format!("Invalid node '{:?}'", nodes[2]))
+	};
+
+	let value = match op.name().as_str() {
+		"MINUS" => left.symbol().parse::<f64>().unwrap() - right.value,
+		"PLUS" => left.symbol().parse::<f64>().unwrap() + right.value,
+		"MULT" => left.symbol().parse::<f64>().unwrap() * right.value,
+		"DIV" => left.symbol().parse::<f64>().unwrap() / right.value,
+		_ => return Err(format!("Invalid operator '{}'", op.name()))
+	};
+
+	Ok(Node::Expr(Expr { value }))
+}
+
+fn program(nodes: &[Node]) -> Result<Node, String> {
+	if nodes.is_empty() {
+		return Ok(Node::Program(None));
+	}
+
+	match nodes[0] {
+		Node::Expr(expr) =>Ok(Node::Program(Some(expr))),
+		_ => Err("Invalid node!".to_owned())
+	}
+}
+
+pub fn parse(input: &str) -> Result<Node, (ParserError, Position)> {
+	let mut lexer_builder = LexerBuilder::new();
+
+	lexer_builder.ignore_rule(r"(^[ \t]+)").unwrap();
+	lexer_builder.add_rules(&[
+		("DIV", r"(^[/])"),
+		("ID", r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
+		("MINUS", r"(^[-])"),
+		("MULT", r"(^[*])"),
+		("NL", r"(^[\r\n]+)"),
+		("NUM", r"(^\d+(\.\d+)?)"),
+		("PLUS", r"(^[+])")
+	]).unwrap();
+
+	let lexer = lexer_builder.build();
+	let mut parser_builder = parse::ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
+
+	parser_builder.add_patterns(&[
+		("expr", "NUM PLUS expr", expr_op),
+		("expr", "NUM MINUS expr", expr_op),
+		("expr", "NUM MULT expr", expr_op),
+		("expr", "NUM DIV expr", expr_op),
+		("expr", "NUM", expr_num),
+		("program", "expr", program),
+		("program", "", program)
+	]).unwrap();
+
+	let mut parser = parser_builder.build();
+	parser.parse(lexer.lex(&input))
 }
