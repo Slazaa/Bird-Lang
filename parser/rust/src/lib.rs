@@ -787,6 +787,8 @@ pub enum Node {
 	Token(Token),
 	// ----------
 	Expr(Expr),
+	NewLine,
+	OptNewLine(bool),
 	Program(Option<Expr>)
 }
 
@@ -838,6 +840,17 @@ fn expr_op(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Expr(Expr { value }))
 }
 
+fn opt_new_line(nodes: &[Node]) -> Result<Node, String> {
+	if nodes.is_empty() {
+		return Ok(Node::OptNewLine(false))
+	}
+
+	match &nodes[0] {
+		Node::Token(x) if x.name() == "NL" => Ok(Node::OptNewLine(true)),
+		_ => return Err(format!("Invalid node '{:?}'", nodes[0]))
+	}
+}
+
 fn program(nodes: &[Node]) -> Result<Node, String> {
 	if nodes.is_empty() {
 		return Ok(Node::Program(None));
@@ -872,6 +885,8 @@ pub fn parse(input: &str) -> Result<Node, (ParserError, Position)> {
 		("expr", "NUM MULT expr", expr_op),
 		("expr", "NUM DIV expr", expr_op),
 		("expr", "NUM", expr_num),
+		("opt_nl", "NL", opt_new_line),
+		("opt_nl", "", opt_new_line),
 		("program", "expr", program),
 		("program", "", program)
 	]).unwrap();
