@@ -1,8 +1,0 @@
-[package]
-name = "birdc"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-birdp = { git = "https://github.com/Slazaa/Bird-Lang/tree/master/parser/rust" }
-birdu = { git = "https://github.com/Slazaa/Bird-Lang/tree/master/utils/rust" }
