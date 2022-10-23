@@ -12,11 +12,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "bird_utils"
+name = "bird_parser"
 version = "0.1.0"
 dependencies = [
+ "bird_utils",
  "parse",
 ]
+
+[[package]]
+name = "bird_utils"
+version = "0.1.0"
+source = "git+https://github.com/Slazaa/Bird-Lang#30bbd4dc38b1f4e2d9a5258ec002e34812ce3337"
 
 [[package]]
 name = "memchr"

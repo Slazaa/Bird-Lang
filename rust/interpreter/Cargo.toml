@@ -1,4 +1,4 @@
 [package]
-name = "bird_utils"
+name = "birdi"
 version = "0.1.0"
 edition = "2021"
