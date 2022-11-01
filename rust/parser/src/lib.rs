@@ -1,6 +1,6 @@
 use std::fs;
 
-use parse::*;
+use parse::{LexerBuilder, ParserBuilder, Token, ASTNode};
 use bird_utils::feedback::*;
 
 #[derive(Debug, Clone)]
@@ -199,7 +199,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		Ok(x) => x,
 		Err(_) => {
 			println!("Invalid filename '{}'", filename);
-			return;
+			return Err(Error::no_file_or_dir(filename));
 		}
 	};
 
@@ -247,7 +247,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		}
 	}
 
-	let mut parser_builder = parse::ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
+	let mut parser_builder = ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
 	parser_builder.add_patterns(&[
 		("expr",       "NUM PLUS expr", expr_op),
@@ -273,10 +273,10 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	let mut parser = parser_builder.build();
 
 	match parser.parse(lexer.lex(&input)) {
-		Ok(x) => x,
+		Ok(x) => Ok(x),
 		Err((e, pos)) => {
 			println!("{:?} at {}", e, pos);
-			return;
+			return Err(Error::invalid_syntax(None, &format!("{:?}", e)));
 		}
 	}
 }
