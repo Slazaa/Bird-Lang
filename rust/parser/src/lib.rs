@@ -3,6 +3,10 @@ use std::fs;
 use parse::{LexerBuilder, ParserBuilder, Token, ASTNode};
 use bird_utils::feedback::*;
 
+mod patterns;
+
+use crate::patterns::*;
+
 #[derive(Debug, Clone)]
 pub enum Item {
 	Func(Func),
@@ -22,12 +26,6 @@ pub struct FuncProto {
 }
 
 #[derive(Debug, Clone)]
-pub struct VarDecl {
-	pub id: String,
-	pub expr: Option<Expr>
-}
-
-#[derive(Debug, Clone)]
 pub enum Stmt {
 	Expr(Expr),
 	Item(Item)
@@ -39,23 +37,24 @@ pub struct Stmts {
 }
 
 #[derive(Debug, Clone)]
-pub struct Expr {
-	pub value: f64
+pub struct BinExpr {
+	pub left: Expr,
+	pub op: String,
+	pub right: Expr
 }
 
 #[derive(Debug, Clone)]
 pub enum Node {
 	Token(Token),
 	// ----------
-	NewLine,
-	OptNewLine,
 	Item(Item),
 	Func(Func),
 	FuncProto(FuncProto),
 	Stmt(Stmt),
 	Stmts(Stmts),
+	Literal(Literal),
 	Expr(Expr),
-	Program(Option<Stmts>),
+	Program(Stmts),
 	VarDecl(VarDecl)
 }
 
@@ -74,37 +73,6 @@ impl ASTNode for Node {
 	fn is_token(&self) -> bool {
 		matches!(self, Self::Token(_))
 	}
-}
-
-fn expr_num(nodes: &[Node]) -> Result<Node, String> {
-	Ok(Node::Expr(Expr { value: nodes[0].token().unwrap().symbol().parse::<f64>().unwrap() }))
-}
-
-fn expr_op(nodes: &[Node]) -> Result<Node, String> {
-	let left = match &nodes[0] {
-		Node::Token(x) if x.name() == "NUM" => x,
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_op'", nodes[0]))
-	};
-
-	let op = match &nodes[1] {
-		Node::Token(x) => x,
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_op'", nodes[1]))
-	};
-
-	let right = match &nodes[2] {
-		Node::Expr(x) => x,
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_op'", nodes[2]))
-	};
-
-	let value = match op.name().as_str() {
-		"MINUS" => left.symbol().parse::<f64>().unwrap() - right.value,
-		"PLUS" => left.symbol().parse::<f64>().unwrap() + right.value,
-		"MULT" => left.symbol().parse::<f64>().unwrap() * right.value,
-		"DIV" => left.symbol().parse::<f64>().unwrap() / right.value,
-		_ => return Err(format!("Invalid operator '{}' in 'expr_op'", op.name()))
-	};
-
-	Ok(Node::Expr(Expr { value }))
 }
 
 fn func(nodes: &[Node]) -> Result<Node, String> {
@@ -141,11 +109,11 @@ fn item(nodes: &[Node]) -> Result<Node, String> {
 
 fn program(nodes: &[Node]) -> Result<Node, String> {
 	if nodes.is_empty() {
-		return Ok(Node::Program(None));
+		return Ok(Node::Program(Stmts { stmts: vec![] }));
 	}
 
 	match &nodes[0] {
-		Node::Stmts(x) => Ok(Node::Program(Some(x.to_owned()))),
+		Node::Stmts(x) => Ok(Node::Program(x.to_owned())),
 		_ => Err(format!("Invalid node '{:?}' in 'program'", nodes[0]))
 	}
 }
@@ -179,21 +147,6 @@ fn stmts(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Stmts(Stmts { stmts: stmts_vec }))
 }
 
-fn var_decl(nodes: &[Node]) -> Result<Node, String> {
-	let id = match &nodes[1] {
-		Node::Token(token) if token.name() == "ID" => token.symbol().to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[1]))
-	};
-
-	let expr = match nodes.get(3) {
-		Some(Node::Expr(expr)) => Some(expr.to_owned()),
-		Some(_) => return Err(format!("Invalid node '{:?}' in 'var'", nodes[3])),
-		None => None
-	};
-
-	Ok(Node::VarDecl(VarDecl { id, expr }))
-}
-
 pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	let input = match fs::read_to_string(filename) {
 		Ok(x) => x,
@@ -206,8 +159,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	let mut lexer_builder = LexerBuilder::new();
 
 	lexer_builder.ignore_rules(&[
-		r"(^[ \t]+)",
-		r"(^[\r\n]+)"
+		r"(^[ \t\r\n]+)"
 	]).unwrap();
 
 	lexer_builder.add_rules(&[
@@ -224,7 +176,9 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 		// Identifier / Literal
 		("ID",    r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
-		("NUM",   r"(^\d+(\.\d+)?)"),
+		("FLOAT", r"(^\d+\.\d+)"),
+		("INT",   r"(^\d+)"),
+		("STR",   r#"(^".*")"#),
 
 		// Misc
 		("COL",   r"(^:)"),
@@ -236,7 +190,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	]).unwrap();
 
 	let lexer = lexer_builder.build();
-
+/*
 	for token in lexer.lex(&input) {
 		match token {
 			Ok(token) => println!("{:#?}", token),
@@ -246,15 +200,10 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 			}
 		}
 	}
-
+*/
 	let mut parser_builder = ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
 	parser_builder.add_patterns(&[
-		("expr",       "NUM PLUS expr", expr_op),
-		("expr",       "NUM MINUS expr", expr_op),
-		("expr",       "NUM MULT expr", expr_op),
-		("expr",       "NUM DIV expr", expr_op),
-		("expr",       "NUM", expr_num),
 		("func",       "FUNC ID LCBR stmts RCBR", func),
 		("func_proto", "FUNC ID", func_proto),
 		("item",       "func", item),
@@ -266,9 +215,11 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("stmts",      "stmt stmts", stmts),
 		("stmts",      "stmt", stmts),
 		("stmts",      "", stmts),
-		("var_decl",   "VAR ID SEMI", var_decl),
-		("var_decl",   "VAR ID EQ expr SEMI", var_decl)
 	]).unwrap();
+
+	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
+	parser_builder.add_patterns(&LITERAL_PATTERNS).unwrap();
+	parser_builder.add_patterns(&VAR_DECL_PATTERNS).unwrap();
 	
 	let mut parser = parser_builder.build();
 
