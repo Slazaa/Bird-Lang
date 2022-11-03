@@ -14,7 +14,7 @@ pub enum Expr {
 	BinExpr()
 }
 
-pub fn expr_literal(nodes: &[Node]) -> Result<Node, String> {
+fn expr_literal(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {
 		Node::Literal(x) => Node::Expr(Expr::Literal(x.to_owned())),
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[0]))
