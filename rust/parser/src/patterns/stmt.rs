@@ -10,8 +10,9 @@ pub enum Stmt {
 	Item(Item)
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
-	("stmt", "item", stmt)
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
+	("stmt", "item", stmt),
+	("stmt", "expr", stmt)
 ];
 
 fn stmt(nodes: &[Node]) -> Result<Node, String> {

@@ -11,14 +11,15 @@ use crate::patterns::*;
 pub enum Node {
 	Token(Token),
 	// ----------
-	Item(Item),
+	Expr(Expr),
 	Func(Func),
 	FuncProto(FuncProto),
+	IfExpr(IfExpr),
+	Item(Item),
+	Literal(Literal),
+	Program(Stmts),
 	Stmt(Stmt),
 	Stmts(Stmts),
-	Literal(Literal),
-	Expr(Expr),
-	Program(Stmts),
 	VarDecl(VarDecl)
 }
 
@@ -60,7 +61,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("FUNC",  r"(^func)"),
 		("EXT",   r"(^extern)"),
 		("IF",    r"(^if)"),
-		("IMP",  r"(^import)"),
+		("IMP",   r"(^import)"),
 		("VAR",   r"(^var)"),
 
 		// Operators
@@ -71,6 +72,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("EQ",    r"(^=)"),
 
 		// Identifier / Literal
+		("BOOL",  r"(^(false|true))"),
 		("ID",    r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
 		("FLT",   r"(^\d+\.\d+)"),
 		("INT",   r"(^\d+)"),
@@ -103,6 +105,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
+	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&ITEM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&LITERAL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
