@@ -4,9 +4,9 @@ use crate::Node;
 
 #[derive(Debug, Clone)]
 pub enum LiteralKind {
-	Char,
-	Float,
 	Int,
+	Flt,
+	Chr,
 	Str
 }
 
@@ -16,9 +16,10 @@ pub struct Literal {
 	pub value: String
 }
 
-pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
 	("literal", "INT", literal_int),
-	("literal", "FLOAT", literal_float),
+	("literal", "FLT", literal_flt),
+	("literal", "CHR", literal_chr),
 	("literal", "STR", literal_str)
 ];
 
@@ -29,9 +30,16 @@ fn literal_int(nodes: &[Node]) -> Result<Node, String> {
 	}))
 }
 
-fn literal_float(nodes: &[Node]) -> Result<Node, String> {
+fn literal_chr(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Float,
+		kind: LiteralKind::Chr,
+		value: nodes[0].token().unwrap().symbol().to_owned()
+	}))
+}
+
+fn literal_flt(nodes: &[Node]) -> Result<Node, String> {
+	Ok(Node::Literal(Literal {
+		kind: LiteralKind::Flt,
 		value: nodes[0].token().unwrap().symbol().to_owned()
 	}))
 }

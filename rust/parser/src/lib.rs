@@ -8,13 +8,6 @@ mod patterns;
 use crate::patterns::*;
 
 #[derive(Debug, Clone)]
-pub struct BinExpr {
-	pub left: Expr,
-	pub op: String,
-	pub right: Expr
-}
-
-#[derive(Debug, Clone)]
 pub enum Node {
 	Token(Token),
 	// ----------
@@ -58,12 +51,16 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	let mut lexer_builder = LexerBuilder::new();
 
 	lexer_builder.ignore_rules(&[
-		r"(^[ \t\r\n]+)"
+		r"(^[ \t\r\n]+)", // Blank spaces
+		r"(^#.*)" // Comments
 	]).unwrap();
 
 	lexer_builder.add_rules(&[
 		// Keywords
 		("FUNC",  r"(^func)"),
+		("EXT",   r"(^extern)"),
+		("IF",    r"(^if)"),
+		("IMP",  r"(^import)"),
 		("VAR",   r"(^var)"),
 
 		// Operators
@@ -75,8 +72,9 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 		// Identifier / Literal
 		("ID",    r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
-		("FLOAT", r"(^\d+\.\d+)"),
+		("FLT",   r"(^\d+\.\d+)"),
 		("INT",   r"(^\d+)"),
+		("CHR",   r"(^'.')"),
 		("STR",   r#"(^".*")"#),
 
 		// Misc
