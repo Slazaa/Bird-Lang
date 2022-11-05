@@ -2,9 +2,14 @@ use parse::PatternFunc;
 
 use crate::Node;
 
-use super::Literal;
+use super::{Literal, LiteralKind};
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
+	("expr", "INT PLUS expr", expr_bin_op_int),
+	("expr", "INT MINUS expr", expr_bin_op_int),
+	("expr", "INT MULT expr", expr_bin_op_int),
+	("expr", "INT DIV expr", expr_bin_op_int),
+	
 	("expr", "literal", expr_literal)
 ];
 
@@ -21,9 +26,9 @@ pub enum Expr {
 	BinOp(BinOp)
 }
 
-fn expr_bin_op(nodes: &[Node]) -> Result<Node, String> {
+fn expr_bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {
-		Node::Literal(x) => Expr::Literal(x.to_owned()),
+		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol().to_owned() }),
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[0]))
 	};
 

@@ -6,10 +6,9 @@
 
 ## Hello World
 ```bird
-import bird::io::Console
+import "bird/io/Console" : Console
 
-func main()
-{
-	Console.output("Hello, World!\n")
+func main {
+	Console.output("Hello, World!\n");
 }
 ```
