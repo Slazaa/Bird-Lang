@@ -31,7 +31,7 @@ impl Feedback {
 		}
 	}
 
-	fn description(&self) -> &Sting {
+	fn description(&self) -> &String {
 		&self.description
 	}
 
