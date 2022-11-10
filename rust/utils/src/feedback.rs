@@ -31,6 +31,10 @@ impl Feedback {
 		}
 	}
 
+	fn description(&self) -> &Sting {
+		&self.description
+	}
+
 	fn arrow_pos(pos_start: &Position, pos_end: &Position) -> String {
 		let mut result = String::new();
 		let line_string = format!("{}", pos_start.line() + 1);
