@@ -11,6 +11,7 @@ use crate::patterns::*;
 pub enum Node {
 	Token(Token),
 	// ----------
+	AssignExpr(AssignExpr),
 	Expr(Expr),
 	Func(Func),
 	FuncProto(FuncProto),
@@ -43,10 +44,7 @@ impl ASTNode for Node {
 pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	let input = match fs::read_to_string(filename) {
 		Ok(x) => x,
-		Err(_) => {
-			println!("Invalid filename '{}'", filename);
-			return Err(Error::no_file_or_dir(filename));
-		}
+		Err(_) => return Err(Error::no_file_or_dir(filename))
 	};
 
 	let mut lexer_builder = LexerBuilder::new();
@@ -102,6 +100,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 */
 	let mut parser_builder = ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
+	parser_builder.add_patterns(&ASSIGN_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();

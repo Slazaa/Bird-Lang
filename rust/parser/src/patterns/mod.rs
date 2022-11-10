@@ -1,3 +1,4 @@
+mod assign_expr;
 mod expr;
 mod item;
 mod func_proto;
@@ -9,6 +10,7 @@ mod stmt;
 mod stmts;
 mod var_decl;
 
+pub use assign_expr::*;
 pub use expr::*;
 pub use item::*;
 pub use func_proto::*;

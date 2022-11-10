@@ -2,17 +2,19 @@ use parse::PatternFunc;
 
 use crate::Node;
 
-use super::{Literal, LiteralKind, IfExpr};
+use super::{Literal, LiteralKind, IfExpr, AssignExpr};
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 8] = [
 	("expr", "INT PLUS expr", expr_bin_op_int),
 	("expr", "INT MINUS expr", expr_bin_op_int),
 	("expr", "INT MULT expr", expr_bin_op_int),
 	("expr", "INT DIV expr", expr_bin_op_int),
 
-	("expr", "literal", expr_literal),
+	("expr", "assign_expr", expr_assign),
+	("expr", "if_expr", expr_if),
 
-	("expr", "if_expr", expr_if)
+	("expr", "literal", expr_literal),
+	("expr", "ID", expr_id)
 ];
 
 #[derive(Debug, Clone)]
@@ -24,9 +26,11 @@ pub struct BinOp {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-	Literal(Literal),
 	BinOp(BinOp),
-	IfExpr(Box<IfExpr>)
+	AssignExpr(Box<AssignExpr>),
+	Id(String),
+	IfExpr(Box<IfExpr>),
+	Literal(Literal)
 }
 
 fn expr_bin_op_int(nodes: &[Node]) -> Result<Node, String> {
@@ -48,6 +52,20 @@ fn expr_bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Expr(Expr::BinOp(BinOp { left: Box::new(left), op, right: Box::new(right) })))
 }
 
+fn expr_if(nodes: &[Node]) -> Result<Node, String> {
+	Ok(match &nodes[0] {
+		Node::IfExpr(x) => Node::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
+		_ => return Err(format!("Invalid node '{:?}' in 'expr_if'", nodes[0]))
+	})
+}
+
+fn expr_assign(nodes: &[Node]) -> Result<Node, String> {
+	Ok(match &nodes[0] {
+		Node::AssignExpr(x) => Node::Expr(Expr::AssignExpr(Box::new(x.to_owned()))),
+		_ => return Err(format!("Invalid node '{:?}' in 'expr_assign'", nodes[0]))
+	})
+}
+
 fn expr_literal(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {
 		Node::Literal(x) => Node::Expr(Expr::Literal(x.to_owned())),
@@ -55,9 +73,9 @@ fn expr_literal(nodes: &[Node]) -> Result<Node, String> {
 	})
 }
 
-fn expr_if(nodes: &[Node]) -> Result<Node, String> {
+fn expr_id(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {
-		Node::IfExpr(x) => Node::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_if'", nodes[0]))
+		Node::Token(x) => Node::Expr(Expr::Id(x.symbol().to_owned())),
+		_ => return Err(format!("Invalid node '{:?}' in 'expr_id'", nodes[0]))
 	})
 }
