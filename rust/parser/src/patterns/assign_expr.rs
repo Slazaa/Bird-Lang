@@ -17,12 +17,12 @@ pub struct AssignExpr {
 fn assign_id(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {
 		Node::Token(x) => x.symbol().to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'assign'", nodes[0]))
+		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", nodes[0]))
 	};
 
 	let right = match &nodes[2] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'assign'", nodes[2]))
+		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", nodes[2]))
 	};
 
 	Ok(Node::AssignExpr(AssignExpr { left: Expr::Id(left), right }))

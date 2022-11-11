@@ -2,12 +2,13 @@ use parse::PatternFunc;
 
 use crate::Node;
 
-use super::{Literal, IfExpr, AssignExpr, BinOp};
+use super::{Literal, IfExpr, AssignExpr, BinOp, UnaryOp};
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
 	("expr", "assign_expr", expr_assign),
 	("expr", "bin_op", expr_bin_op),
 	("expr", "if_expr", expr_if),
+	("expr", "unary_op", expr_unary_op),
 
 	("expr", "literal", expr_literal),
 	("expr", "ID", expr_id)
@@ -17,9 +18,11 @@ pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
 pub enum Expr {
 	BinOp(Box<BinOp>),
 	AssignExpr(Box<AssignExpr>),
-	Id(String),
 	IfExpr(Box<IfExpr>),
-	Literal(Literal)
+	UnaryOp(Box<UnaryOp>),
+
+	Literal(Literal),
+	Id(String)
 }
 
 fn expr_assign(nodes: &[Node]) -> Result<Node, String> {
@@ -40,6 +43,13 @@ fn expr_if(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {
 		Node::IfExpr(x) => Node::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
 		_ => return Err(format!("Invalid node '{:?}' in 'expr_if'", nodes[0]))
+	})
+}
+
+fn expr_unary_op(nodes: &[Node]) -> Result<Node, String> {
+	Ok(match &nodes[0] {
+		Node::UnaryOp(x) => Node::Expr(Expr::UnaryOp(Box::new(x.to_owned()))),
+		_ => return Err(format!("Invalid node '{:?}' in 'expr_assign'", nodes[0]))
 	})
 }
 

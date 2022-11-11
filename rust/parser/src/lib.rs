@@ -22,6 +22,7 @@ pub enum Node {
 	Program(Stmts),
 	Stmt(Stmt),
 	Stmts(Stmts),
+	UnaryOp(UnaryOp),
 	VarDecl(VarDecl)
 }
 
@@ -68,6 +69,9 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("MINUS", r"(^-)"),
 		("MULT",  r"(^\*)"),
 		("DIV",   r"(^/)"),
+
+		("AMP",   r"(^&)"),
+
 		("EQ",    r"(^=)"),
 
 		// Identifier / Literal
@@ -112,6 +116,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMT_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMTS_PATTERNS).unwrap();
+	parser_builder.add_patterns(&UNARY_OP_PATTERNS).unwrap();
 	parser_builder.add_patterns(&VAR_DECL_PATTERNS).unwrap();
 	
 	let mut parser = parser_builder.build();

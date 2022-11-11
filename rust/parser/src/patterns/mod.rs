@@ -9,6 +9,7 @@ mod literal;
 mod program;
 mod stmt;
 mod stmts;
+mod unary_op;
 mod var_decl;
 
 pub use assign_expr::*;
@@ -22,4 +23,5 @@ pub use literal::*;
 pub use program::*;
 pub use stmt::*;
 pub use stmts::*;
+pub use unary_op::*;
 pub use var_decl::*;
