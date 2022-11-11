@@ -25,7 +25,7 @@ Note that you cannot read from a variable that has not been asigned a value.
 For instance, this code is invalid:
 
 ```bird
-import bird::io::Console
+import "bird/console" : Console;
 
 func main {
 	var x;

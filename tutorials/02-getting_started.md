@@ -6,7 +6,7 @@
 
 ## Hello World
 ```bird
-import "bird/io/Console" : Console
+import "bird/console" : Console;
 
 func main {
 	Console.output("Hello, World!\n");
