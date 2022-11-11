@@ -12,7 +12,7 @@ pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
 ];
 
 #[derive(Debug, Clone)]
-pub struct BinOp {
+pub struct BinExpr {
 	pub left: Expr,
 	pub op: String,
 	pub right: Expr
@@ -34,5 +34,5 @@ fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[2]))
 	};
 
-	Ok(Node::BinOp(BinOp { left, op, right }))
+	Ok(Node::BinExpr(BinExpr { left, op, right }))
 }

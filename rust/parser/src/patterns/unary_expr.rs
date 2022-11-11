@@ -11,7 +11,7 @@ pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
 ];
 
 #[derive(Debug, Clone)]
-pub struct UnaryOp {
+pub struct UnaryExpr {
 	pub op: String,
 	pub val: Expr
 }
@@ -27,7 +27,7 @@ fn unary_op_minus(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'unary_op_minus'", nodes[1]))
 	};
 
-	Ok(Node::UnaryOp(UnaryOp { op, val }))
+	Ok(Node::UnaryExpr(UnaryExpr { op, val }))
 }
 
 fn unary_op_ref(nodes: &[Node]) -> Result<Node, String> {
@@ -41,7 +41,7 @@ fn unary_op_ref(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'unary_op_deref'", nodes[1]))
 	};
 
-	Ok(Node::UnaryOp(UnaryOp { op, val }))
+	Ok(Node::UnaryExpr(UnaryExpr { op, val }))
 }
 
 fn unary_op_deref(nodes: &[Node]) -> Result<Node, String> {
@@ -55,5 +55,5 @@ fn unary_op_deref(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'unary_op_deref'", nodes[1]))
 	};
 
-	Ok(Node::UnaryOp(UnaryOp { op, val }))
+	Ok(Node::UnaryExpr(UnaryExpr { op, val }))
 }

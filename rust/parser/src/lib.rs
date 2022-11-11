@@ -12,7 +12,7 @@ pub enum Node {
 	Token(Token),
 	// ----------
 	AssignExpr(AssignExpr),
-	BinOp(BinOp),
+	BinExpr(BinExpr),
 	Expr(Expr),
 	Func(Func),
 	FuncProto(FuncProto),
@@ -22,7 +22,7 @@ pub enum Node {
 	Program(Stmts),
 	Stmt(Stmt),
 	Stmts(Stmts),
-	UnaryOp(UnaryOp),
+	UnaryExpr(UnaryExpr),
 	VarDecl(VarDecl)
 }
 
