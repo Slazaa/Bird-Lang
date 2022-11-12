@@ -9,13 +9,20 @@ pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
 	("program",    "", program)
 ];
 
-fn program(nodes: &[Node]) -> Result<Node, String> {
-	if nodes.is_empty() {
-		return Ok(Node::Program(Stmts { stmts: vec![] }));
-	}
+#[derive(Debug, Clone)]
+pub struct Program {
+	pub stmts: Option<Stmts>
+}
 
-	match &nodes[0] {
-		Node::Stmts(x) => Ok(Node::Program(x.to_owned())),
-		_ => Err(format!("Invalid node '{:?}' in 'program'", nodes[0]))
-	}
+fn program(nodes: &[Node]) -> Result<Node, String> {
+	let stmts = if nodes.is_empty() {
+		None
+	} else {
+		match &nodes[0] {
+			Node::Stmts(x) => Some(x.to_owned()),
+			_ => return Err(format!("Invalid node '{:?}' in 'program'", nodes[0]))
+		}
+	};
+
+	Ok(Node::Program(Program { stmts }))
 }

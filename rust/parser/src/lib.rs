@@ -19,7 +19,7 @@ pub enum Node {
 	IfExpr(IfExpr),
 	Item(Item),
 	Literal(Literal),
-	Program(Stmts),
+	Program(Program),
 	Stmt(Stmt),
 	Stmts(Stmts),
 	UnaryExpr(UnaryExpr),
