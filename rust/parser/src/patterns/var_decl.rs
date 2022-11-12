@@ -7,7 +7,7 @@ use super::Expr;
 #[derive(Debug, Clone)]
 pub struct VarDecl {
 	pub id: String,
-	pub value: Option<Expr>
+	pub val: Option<Expr>
 }
 
 pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
@@ -21,7 +21,7 @@ fn var_decl(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[1]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, value: None }))
+	Ok(Node::VarDecl(VarDecl { id, val: None }))
 }
 
 fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
@@ -30,10 +30,10 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[1]))
 	};
 
-	let value = match &nodes[3] {
+	let val = match &nodes[3] {
 		Node::Expr(expr) => Some(expr.to_owned()),
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[3]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, value }))
+	Ok(Node::VarDecl(VarDecl { id, val }))
 }

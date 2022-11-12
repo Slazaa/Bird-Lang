@@ -6,8 +6,8 @@ use super::{Literal, IfExpr, AssignExpr, BinExpr, UnaryExpr};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-	BinExpr(Box<BinExpr>),
 	AssignExpr(Box<AssignExpr>),
+	BinExpr(Box<BinExpr>),
 	IfExpr(Box<IfExpr>),
 	UnaryExpr(Box<UnaryExpr>),
 
