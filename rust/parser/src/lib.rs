@@ -3,7 +3,7 @@ use std::fs;
 use parse::{LexerBuilder, ParserBuilder, Token, ASTNode};
 use bird_utils::feedback::*;
 
-mod patterns;
+pub mod patterns;
 
 use crate::patterns::*;
 
