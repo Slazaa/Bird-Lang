@@ -4,19 +4,19 @@ use crate::Node;
 
 use super::{Expr, Literal, LiteralKind};
 
-pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
-	("bin_op", "INT PLUS expr", bin_op_int),
-	("bin_op", "INT MINUS expr", bin_op_int),
-	("bin_op", "INT MULT expr", bin_op_int),
-	("bin_op", "INT DIV expr", bin_op_int)
-];
-
 #[derive(Debug, Clone)]
 pub struct BinExpr {
 	pub left: Expr,
 	pub op: String,
 	pub right: Expr
 }
+
+pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
+	("bin_op", "INT PLUS expr", bin_op_int),
+	("bin_op", "INT MINUS expr", bin_op_int),
+	("bin_op", "INT MULT expr", bin_op_int),
+	("bin_op", "INT DIV expr", bin_op_int)
+];
 
 fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {

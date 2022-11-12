@@ -4,17 +4,17 @@ use crate::Node;
 
 use super::Expr;
 
-pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
-	("unary_op", "MINUS expr", unary_op_minus),
-	("unary_op", "AMP ID", unary_op_ref),
-	("unary_op", "MULT ID", unary_op_deref)
-];
-
 #[derive(Debug, Clone)]
 pub struct UnaryExpr {
 	pub op: String,
 	pub val: Expr
 }
+
+pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+	("unary_op", "MINUS expr", unary_op_minus),
+	("unary_op", "AMP ID", unary_op_ref),
+	("unary_op", "MULT ID", unary_op_deref)
+];
 
 fn unary_op_minus(nodes: &[Node]) -> Result<Node, String> {
 	let op = match &nodes[0] {

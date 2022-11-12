@@ -4,16 +4,6 @@ use crate::Node;
 
 use super::{Literal, IfExpr, AssignExpr, BinExpr, UnaryExpr};
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
-	("expr", "assign_expr", expr_assign),
-	("expr", "bin_op", expr_bin_op),
-	("expr", "if_expr", expr_if),
-	("expr", "unary_op", expr_unary_op),
-
-	("expr", "literal", expr_literal),
-	("expr", "ID", expr_id)
-];
-
 #[derive(Debug, Clone)]
 pub enum Expr {
 	BinExpr(Box<BinExpr>),
@@ -24,6 +14,16 @@ pub enum Expr {
 	Literal(Literal),
 	Id(String)
 }
+
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
+	("expr", "assign_expr", expr_assign),
+	("expr", "bin_op", expr_bin_op),
+	("expr", "if_expr", expr_if),
+	("expr", "unary_op", expr_unary_op),
+
+	("expr", "literal", expr_literal),
+	("expr", "ID", expr_id)
+];
 
 fn expr_assign(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {

@@ -4,15 +4,15 @@ use crate::Node;
 
 use super::Expr;
 
-pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
-	("assign_expr", "ID EQ expr SEMI", assign_id)
-];
-
 #[derive(Debug, Clone)]
 pub struct AssignExpr {
 	pub left: Expr,
 	pub right: Expr
 }
+
+pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+	("assign_expr", "ID EQ expr SEMI", assign_id)
+];
 
 fn assign_id(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {
