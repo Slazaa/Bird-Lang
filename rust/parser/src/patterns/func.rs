@@ -11,7 +11,7 @@ pub struct Func {
 }
 
 pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
-	("func", "FUNC ID LCBR stmts RCBR", func)
+	("func", "FUNC ID LPAR RPAR LCBR stmts RCBR", func)
 ];
 
 fn func(nodes: &[Node]) -> Result<Node, String> {
@@ -20,7 +20,7 @@ fn func(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
 	};
 
-	let stmts = match &nodes[3] {
+	let stmts = match &nodes[5] {
 		Node::Stmts(x) => x.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[4]))
 	};
