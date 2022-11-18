@@ -8,7 +8,7 @@ pub struct FuncProto {
 }
 
 pub static FUNC_PROTO_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
-	("func_proto", "FUNC ID", func_proto)
+	("func_proto", "FUNC ID SEMI", func_proto)
 ];
 
 fn func_proto(nodes: &[Node]) -> Result<Node, String> {

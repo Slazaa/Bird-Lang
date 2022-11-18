@@ -14,10 +14,12 @@ pub enum Node {
 	AssignExpr(AssignExpr),
 	BinExpr(BinExpr),
 	Expr(Expr),
+	ExternBlock(ExternBlock),
 	Func(Func),
 	FuncProto(FuncProto),
 	IfExpr(IfExpr),
 	Item(Item),
+	Items(Items),
 	Literal(Literal),
 	Program(Program),
 	Stmt(Stmt),
@@ -108,10 +110,12 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&ASSIGN_PATTERNS).unwrap();
 	parser_builder.add_patterns(&BIN_OP_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
+	parser_builder.add_patterns(&EXTERN_BLOCK_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&ITEM_PATTERNS).unwrap();
+	parser_builder.add_patterns(&ITEMS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&LITERAL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMT_PATTERNS).unwrap();
