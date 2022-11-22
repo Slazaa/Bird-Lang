@@ -163,7 +163,7 @@ impl Transpiler {
 			if let Some(val) = &var_decl.val {
 				self.type_infer(val)?
 			} else{
-				"void".to_owned()
+				todo!("Infer after initialisation is not supported yet");
 			}
 		};
 
