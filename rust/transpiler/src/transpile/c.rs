@@ -51,10 +51,10 @@ impl Transpiler {
 
 	fn eval_extern_block(&mut self, extern_block: &ExternBlock, scope_depth: usize) -> Result<String, Feedback> {
 		if extern_block.lang != "\"C\"" {
-			return Err(Error::unspecified("Extern blocks only support the C language"));
+			Err(Error::unspecified("Extern blocks only support the C language"))
+		} else {
+			self.eval_items(&extern_block.items, scope_depth)
 		}
-
-		self.eval_items(&extern_block.items, scope_depth)
 	}
 
 	fn eval_func(&mut self, func: &Func, scope_depth: usize) -> Result<String, Feedback> {
