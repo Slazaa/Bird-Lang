@@ -10,8 +10,9 @@ pub struct Func {
 	pub stmts: Stmts
 }
 
-pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
-	("func", "FUNC ID LCBR stmts RCBR", func)
+pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
+	("func", "FUNC ID LCBR stmts RCBR", func),
+	("func", "FUNC", func_err)
 ];
 
 fn func(nodes: &[Node]) -> Result<Node, String> {
@@ -26,4 +27,8 @@ fn func(nodes: &[Node]) -> Result<Node, String> {
 	};
 
 	Ok(Node::Func(Func { id, stmts }))
+}
+
+fn func_err(_nodes: &[Node]) -> Result<Node, String> {
+	Err("In 'func', expected '{'".to_owned())
 }
