@@ -109,10 +109,7 @@ impl Transpiler {
 		let mut res = String::new();
 
 		for item in &items.items {
-			match self.eval_item(item, scope_depth) {
-				Ok(x) => res.push_str(&x),
-				Err(e) =>  return Err(e)
-			}
+			res.push_str(&self.eval_item(item, scope_depth)?)
 		}
 
 		Ok(res)
@@ -141,10 +138,7 @@ impl Transpiler {
 		let mut res = String::new();
 
 		for stmt in &stmts.stmts {
-			match self.eval_stmt(stmt, scope_depth) {
-				Ok(x) => res.push_str(&x),
-				Err(e) => return Err(e)
-			}
+			res.push_str(&self.eval_stmt(stmt, scope_depth)?)
 		}
 
 		Ok(res)
@@ -159,12 +153,10 @@ impl Transpiler {
 
 		let var_type = if let Some(var_type) = &var_decl.var_type {
 			var_type.to_owned()
+		} else if let Some(val) = &var_decl.val {
+			self.type_infer(val)?
 		} else {
-			if let Some(val) = &var_decl.val {
-				self.type_infer(val)?
-			} else{
-				todo!("Infer after declaration is not supported yet");
-			}
+			todo!("Infer after declaration is not supported yet");
 		};
 
 		if let Some(val) = &var_decl.val {
