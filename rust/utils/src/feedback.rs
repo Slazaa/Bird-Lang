@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Write};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use crate::position::Position;
+use parse::Location;
 
 pub enum FeedbackType {
 	Error
@@ -18,15 +18,15 @@ impl Display for FeedbackType {
 
 pub struct Feedback {
 	feedback_type: FeedbackType,
-	position: Option<(Position, Position)>,
+	location: Option<Location>,
 	description: String,
 }
 
 impl Feedback {
-	pub fn new(feedback_type: FeedbackType, position: Option<(&Position, &Position)>, description: &str) -> Self {
+	pub fn new(feedback_type: FeedbackType, location: Option<&Location>, description: &str) -> Self {
 		Self {
 			feedback_type,
-			position: position.map(|(pos_start, pos_end)| (pos_start.clone(), pos_end.clone())),
+			location: location.map(|x| *x),
 			description: description.to_owned()
 		}
 	}
@@ -35,12 +35,12 @@ impl Feedback {
 		&self.description
 	}
 
-	fn arrow_pos(pos_start: &Position, pos_end: &Position) -> String {
+	fn arrow_pos(location: &Location) -> String {
 		let mut result = String::new();
-		let line_string = format!("{}", pos_start.line() + 1);
+		let line_string = format!("{}", location.start.line + 1);
 
-		if let Some(file_path) = pos_start.file_path() {
-			write!(result, "\n  --> {}:{}:{}", file_path, line_string, pos_start.col() + 1).unwrap();
+		if let Some(file_path) = location.filename {
+			write!(result, "\n  --> {}:{}:{}", file_path, line_string, location.start.col + 1).unwrap();
 		}
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ').collect();
@@ -51,27 +51,27 @@ impl Feedback {
 
 		let mut pipe_down = pipe.clone();
 
-		let line_text = match pos_start.file_path() {
+		let line_text = match location.start.filename {
 			Some(file_path) => {
 				let file = File::open(file_path).unwrap();
 				let reader = BufReader::new(file);
 
 				reader.lines()
-					.nth(pos_start.line() as usize)
+					.nth(location.start.line)
 					.unwrap()
 					.unwrap()
 			}
 			None => todo!()
 		};
 
-		for i in 0..pos_start.col() {
+		for i in 0..location.start.col {
 			match line_text.chars().nth(i as usize) {
 				Some(c) if c == '\t' => pipe_down.push('\t'),
 				_ => pipe_down.push(' ')
 			}
 		}
 
-		for _ in pos_start.col()..=pos_end.col() {
+		for _ in location.start.col..=location.end.col {
 			pipe_down.push('^');
 		}
 
@@ -86,8 +86,8 @@ impl Feedback {
 		let mut result = String::new();
 		result.push_str(format!("{}: {}", self.feedback_type, self.description).as_str());
 
-		if let Some((pos_start, pos_end)) = &self.position {
-			result.push_str(&Self::arrow_pos(pos_start, pos_end));
+		if let Some(location) = &self.location {
+			result.push_str(&Self::arrow_pos(location));
 		}
 
 		result
@@ -97,7 +97,7 @@ impl Feedback {
 pub struct Error;
 
 impl Error {
-	pub fn expected(position: (&Position, &Position), expected: &str, found: Option<&str>) -> Feedback {
+	pub fn expected(location: &Location, expected: &str, found: Option<&str>) -> Feedback {
 		let mut expected = expected;
 
 		if expected.contains('\n') {
@@ -117,11 +117,11 @@ impl Error {
 			None => format!("Expected {}", expected)
 		};
 
-		Feedback::new(FeedbackType::Error, Some(position), &description)
+		Feedback::new(FeedbackType::Error, Some(location), &description)
 	}
 
-	pub fn invalid_syntax(position: Option<(&Position, &Position)>, description: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error, position, description)
+	pub fn invalid_syntax(location: &Location, description: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error, Some(location), description)
 	}
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
@@ -132,8 +132,8 @@ impl Error {
 		Feedback::new(FeedbackType::Error,Some(position),&format!("Redefinition of '{}'", identifier))
 	}
 */
-	pub fn unexpected(position: (&Position, &Position), unexpected: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error,Some(position),&format!("Unexpected {}", unexpected))
+	pub fn unexpected(location: &Location, unexpected: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error,Some(&location),&format!("Unexpected {}", unexpected))
 	}
 
 	pub fn unspecified(description: &str) -> Feedback {
