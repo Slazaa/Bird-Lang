@@ -51,7 +51,7 @@ impl Feedback {
 
 		let mut pipe_down = pipe.clone();
 
-		let line_text = match location.start.filename {
+		let line_text = match location.filename {
 			Some(file_path) => {
 				let file = File::open(file_path).unwrap();
 				let reader = BufReader::new(file);
