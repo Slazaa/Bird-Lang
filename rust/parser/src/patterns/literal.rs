@@ -1,4 +1,4 @@
-use parse::{ASTNode, PatternFunc};
+use parse::{PatternFunc, Location};
 
 use crate::Node;
 
@@ -14,48 +14,36 @@ pub enum LiteralKind {
 #[derive(Debug, Clone)]
 pub struct Literal {
 	pub kind: LiteralKind,
-	pub value: String
+	pub value: String,
+	pub location: Location
 }
 
 pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
-	("literal", "BOOL", literal_bool),
-	("literal", "INT", literal_int),
-	("literal", "FLT", literal_flt),
-	("literal", "CHR", literal_chr),
-	("literal", "STR", literal_str)
+	("literal", "BOOL", literal),
+	("literal", "INT", literal),
+	("literal", "FLT", literal),
+	("literal", "CHR", literal),
+	("literal", "STR", literal)
 ];
 
-fn literal_bool(nodes: &[Node]) -> Result<Node, String> {
-	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Bool,
-		value: nodes[0].token().unwrap().symbol().to_owned()
-	}))
-}
+fn literal(nodes: &[Node]) -> Result<Node, String> {
+	let token = match &nodes[0] {
+		Node::Token(x) => x,
+		_ => return Err(format!("Invalid node '{:?}' in 'literal'", nodes[0]))
+	};
 
-fn literal_int(nodes: &[Node]) -> Result<Node, String> {
-	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Int,
-		value: nodes[0].token().unwrap().symbol().to_owned()
-	}))
-}
+	let kind = match token.symbol.as_str() {
+		"BOOL" => LiteralKind::Bool,
+		"INT" => LiteralKind::Int,
+		"FLT" => LiteralKind::Flt,
+		"CHR" => LiteralKind::Chr,
+		"STR" => LiteralKind::Str,
+		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", token))
+	};
 
-fn literal_chr(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Chr,
-		value: nodes[0].token().unwrap().symbol().to_owned()
-	}))
-}
-
-fn literal_flt(nodes: &[Node]) -> Result<Node, String> {
-	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Flt,
-		value: nodes[0].token().unwrap().symbol().to_owned()
-	}))
-}
-
-fn literal_str(nodes: &[Node]) -> Result<Node, String> {
-	Ok(Node::Literal(Literal {
-		kind: LiteralKind::Str,
-		value: nodes[0].token().unwrap().symbol().to_owned()
+		kind,
+		value: token.symbol.to_owned(),
+		location: token.location
 	}))
 }

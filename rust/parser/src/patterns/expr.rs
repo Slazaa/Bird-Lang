@@ -1,4 +1,4 @@
-use parse::PatternFunc;
+use parse::{PatternFunc, Location, Token};
 
 use crate::Node;
 
@@ -12,57 +12,42 @@ pub enum Expr {
 	UnaryExpr(Box<UnaryExpr>),
 
 	Literal(Literal),
-	Id(String)
+	Id(Token)
+}
+
+impl Expr {
+	pub fn location(&self) -> Location {
+		match self {
+			Self::AssignExpr(x) => x.location,
+			Self::BinExpr(x) => x.location,
+			Self::IfExpr(x) => x.location,
+			Self::UnaryExpr(x) => x.location,
+
+			Self::Literal(x) => x.location,
+			Self::Id(x) => x.location
+		}
+	}
 }
 
 pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
-	("expr", "assign_expr", expr_assign),
-	("expr", "bin_op", expr_bin_op),
-	("expr", "if_expr", expr_if),
-	("expr", "unary_op", expr_unary_op),
+	("expr", "assign_expr", expr),
+	("expr", "bin_op", expr),
+	("expr", "if_expr", expr),
+	("expr", "unary_op", expr),
 
-	("expr", "literal", expr_literal),
-	("expr", "ID", expr_id)
+	("expr", "literal", expr),
+	("expr", "ID", expr)
 ];
 
-fn expr_assign(nodes: &[Node]) -> Result<Node, String> {
+fn expr(nodes: &[Node]) -> Result<Node, String> {
 	Ok(match &nodes[0] {
 		Node::AssignExpr(x) => Node::Expr(Expr::AssignExpr(Box::new(x.to_owned()))),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_assign'", nodes[0]))
-	})
-}
-
-fn expr_bin_op(nodes: &[Node]) -> Result<Node, String> {
-	Ok(match &nodes[0] {
 		Node::BinExpr(x) => Node::Expr(Expr::BinExpr(Box::new(x.to_owned()))),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_bin_op'", nodes[0]))
-	})
-}
-
-fn expr_if(nodes: &[Node]) -> Result<Node, String> {
-	Ok(match &nodes[0] {
 		Node::IfExpr(x) => Node::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_if'", nodes[0]))
-	})
-}
-
-fn expr_unary_op(nodes: &[Node]) -> Result<Node, String> {
-	Ok(match &nodes[0] {
 		Node::UnaryExpr(x) => Node::Expr(Expr::UnaryExpr(Box::new(x.to_owned()))),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_assign'", nodes[0]))
-	})
-}
 
-fn expr_literal(nodes: &[Node]) -> Result<Node, String> {
-	Ok(match &nodes[0] {
 		Node::Literal(x) => Node::Expr(Expr::Literal(x.to_owned())),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_literal'", nodes[0]))
-	})
-}
-
-fn expr_id(nodes: &[Node]) -> Result<Node, String> {
-	Ok(match &nodes[0] {
-		Node::Token(x) => Node::Expr(Expr::Id(x.symbol().to_owned())),
-		_ => return Err(format!("Invalid node '{:?}' in 'expr_id'", nodes[0]))
+		Node::Token(x) => Node::Expr(Expr::Id(x.to_owned())),
+		_ => return Err(format!("Invalid node '{:?}' in 'expr'", nodes[0]))
 	})
 }

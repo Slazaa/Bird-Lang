@@ -46,11 +46,6 @@ impl ASTNode for Node {
 }
 
 pub fn parse(filename: &str) -> Result<Node, Feedback> {
-	let input = match fs::read_to_string(filename) {
-		Ok(x) => x,
-		Err(_) => return Err(Error::no_file_or_dir(filename))
-	};
-
 	let mut lexer_builder = LexerBuilder::new();
 
 	lexer_builder.ignore_rules(&[
@@ -125,7 +120,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	
 	let mut parser = parser_builder.build();
 
-	match parser.parse(lexer.lex(&input)) {
+	match parser.parse(lexer.lex_from_file(filename)) {
 		Ok(x) => Ok(x),
 		Err((e, pos)) => {
 			println!("{:?} at {}", e, pos);

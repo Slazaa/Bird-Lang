@@ -1,4 +1,4 @@
-use parse::PatternFunc;
+use parse::{PatternFunc, Location};
 
 use crate::Node;
 
@@ -8,6 +8,15 @@ use super::{Expr, Item};
 pub enum Stmt {
 	Expr(Expr),
 	Item(Item)
+}
+
+impl Stmt {
+	pub fn location(&self) -> Location {
+		match self {
+			Self::Expr(x) => x.location(),
+			Self::Item(x) => x.location()
+		}
+	}
 }
 
 pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
