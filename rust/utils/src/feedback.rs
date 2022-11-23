@@ -39,7 +39,7 @@ impl Feedback {
 		let mut result = String::new();
 		let line_string = format!("{}", location.start.line + 1);
 
-		if let Some(filename) = location.filename {
+		if let Some(filename) = &location.filename {
 			write!(result, "\n  --> {}:{}:{}", filename, line_string, location.start.col + 1).unwrap();
 		}
 
@@ -51,7 +51,7 @@ impl Feedback {
 
 		let mut pipe_down = pipe.clone();
 
-		let line_text = match location.filename {
+		let line_text = match &location.filename {
 			Some(filename) => {
 				let file = File::open(filename).unwrap();
 				let reader = BufReader::new(file);
