@@ -120,8 +120,8 @@ impl Error {
 		Feedback::new(FeedbackType::Error, Some(location), &description)
 	}
 
-	pub fn invalid_syntax(location: &Location, description: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error, Some(location), description)
+	pub fn invalid_syntax(location: Option<&Location>, description: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error, location, description)
 	}
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
