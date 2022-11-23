@@ -26,7 +26,7 @@ impl Feedback {
 	pub fn new(feedback_type: FeedbackType, location: Option<&Location>, description: &str) -> Self {
 		Self {
 			feedback_type,
-			location: location.map(|x| *x),
+			location: location.map(|x| x.to_owned()),
 			description: description.to_owned()
 		}
 	}
@@ -39,8 +39,8 @@ impl Feedback {
 		let mut result = String::new();
 		let line_string = format!("{}", location.start.line + 1);
 
-		if let Some(file_path) = location.filename {
-			write!(result, "\n  --> {}:{}:{}", file_path, line_string, location.start.col + 1).unwrap();
+		if let Some(filename) = location.filename {
+			write!(result, "\n  --> {}:{}:{}", filename, line_string, location.start.col + 1).unwrap();
 		}
 
 		let mut pipe: String = (0..=line_string.len()).map(|_| ' ').collect();
@@ -52,8 +52,8 @@ impl Feedback {
 		let mut pipe_down = pipe.clone();
 
 		let line_text = match location.filename {
-			Some(file_path) => {
-				let file = File::open(file_path).unwrap();
+			Some(filename) => {
+				let file = File::open(filename).unwrap();
 				let reader = BufReader::new(file);
 
 				reader.lines()
