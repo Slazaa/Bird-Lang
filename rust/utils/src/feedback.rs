@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Write};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use parse::Location;
+use parse::Loc;
 
 pub enum FeedbackType {
 	Error
@@ -18,24 +18,24 @@ impl Display for FeedbackType {
 
 pub struct Feedback {
 	feedback_type: FeedbackType,
-	location: Option<Location>,
-	description: String,
+	loc: Option<Loc>,
+	desc: String,
 }
 
 impl Feedback {
-	pub fn new(feedback_type: FeedbackType, location: Option<&Location>, description: &str) -> Self {
+	pub fn new(feedback_type: FeedbackType, loc: Option<&Loc>, desc: &str) -> Self {
 		Self {
 			feedback_type,
-			location: location.map(|x| x.to_owned()),
-			description: description.to_owned()
+			loc: loc.map(|x| x.to_owned()),
+			desc: desc.to_owned()
 		}
 	}
 
-	pub fn description(&self) -> &String {
-		&self.description
+	pub fn desc(&self) -> &String {
+		&self.desc
 	}
 
-	fn arrow_pos(location: &Location) -> String {
+	fn arrow_pos(location: &Loc) -> String {
 		let mut result = String::new();
 		let line_string = format!("{}", location.start.line + 1);
 
@@ -84,10 +84,10 @@ impl Feedback {
 
 	pub fn as_string(&self) -> String {
 		let mut result = String::new();
-		result.push_str(format!("{}: {}", self.feedback_type, self.description).as_str());
+		result.push_str(format!("{}: {}", self.feedback_type, self.desc).as_str());
 
-		if let Some(location) = &self.location {
-			result.push_str(&Self::arrow_pos(location));
+		if let Some(loc) = &self.loc {
+			result.push_str(&Self::arrow_pos(loc));
 		}
 
 		result
@@ -97,7 +97,7 @@ impl Feedback {
 pub struct Error;
 
 impl Error {
-	pub fn expected(location: &Location, expected: &str, found: Option<&str>) -> Feedback {
+	pub fn expected(loc: &Loc, expected: &str, found: Option<&str>) -> Feedback {
 		let mut expected = expected;
 
 		if expected.contains('\n') {
@@ -117,11 +117,11 @@ impl Error {
 			None => format!("Expected {}", expected)
 		};
 
-		Feedback::new(FeedbackType::Error, Some(location), &description)
+		Feedback::new(FeedbackType::Error, Some(loc), &description)
 	}
 
-	pub fn invalid_syntax(location: Option<&Location>, description: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error, location, description)
+	pub fn invalid_syntax(loc: Option<&Loc>, description: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error, loc, description)
 	}
 
 	pub fn no_file_or_dir(filename: &str) -> Feedback {
@@ -132,8 +132,8 @@ impl Error {
 		Feedback::new(FeedbackType::Error,Some(position),&format!("Redefinition of '{}'", identifier))
 	}
 */
-	pub fn unexpected(location: &Location, unexpected: &str) -> Feedback {
-		Feedback::new(FeedbackType::Error,Some(&location),&format!("Unexpected {}", unexpected))
+	pub fn unexpected(loc: &Loc, unexpected: &str) -> Feedback {
+		Feedback::new(FeedbackType::Error,Some(&loc),&format!("Unexpected {}", unexpected))
 	}
 
 	pub fn unspecified(description: &str) -> Feedback {
