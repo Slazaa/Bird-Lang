@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -7,7 +7,7 @@ use super::Stmts;
 #[derive(Debug, Clone)]
 pub struct Program {
 	pub stmts: Stmts,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
@@ -21,11 +21,11 @@ fn program(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'program'", nodes[0]))
 	};
 
-	let location = if stmts.stmts.is_empty() {
-		Location::default()
+	let loc = if stmts.stmts.is_empty() {
+		Loc::default()
 	} else {
-		stmts.location
+		stmts.loc.to_owned()
 	};
 
-	Ok(Node::Program(Program { stmts, location }))
+	Ok(Node::Program(Program { stmts, loc }))
 }

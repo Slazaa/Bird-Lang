@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -11,10 +11,10 @@ pub enum Stmt {
 }
 
 impl Stmt {
-	pub fn location(&self) -> Location {
+	pub fn loc(&self) -> Loc {
 		match self {
-			Self::Expr(x) => x.location(),
-			Self::Item(x) => x.location()
+			Self::Expr(x) => x.loc(),
+			Self::Item(x) => x.loc()
 		}
 	}
 }

@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location, ASTNode};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -9,7 +9,7 @@ pub struct VarDecl {
 	pub id: String,
 	pub var_type: Option<String>,
 	pub val: Option<Expr>,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
@@ -25,7 +25,10 @@ fn _var_decl(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[1]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: None, val: None, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::VarDecl(VarDecl { id, var_type: None, val: None, loc }))
 }
 
 fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
@@ -39,7 +42,10 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[3]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: None, val, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::VarDecl(VarDecl { id, var_type: None, val, loc }))
 }
 
 fn var_decl_typed(nodes: &[Node]) -> Result<Node, String> {
@@ -53,7 +59,10 @@ fn var_decl_typed(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[1]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val: None, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val: None, loc }))
 }
 
 fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, String> {
@@ -72,5 +81,8 @@ fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'var'", nodes[3]))
 	};
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[6].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val, loc }))
 }

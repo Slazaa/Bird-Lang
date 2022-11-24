@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -7,7 +7,7 @@ use super::Item;
 #[derive(Debug, Clone)]
 pub struct Items {
 	pub items: Vec<Item>,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static ITEMS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
@@ -18,7 +18,7 @@ pub static ITEMS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
 
 fn items(nodes: &[Node]) -> Result<Node, String> {
 	if nodes.is_empty() {
-		return Ok(Node::Items(Items { items: vec![], location: Location::default() }));
+		return Ok(Node::Items(Items { items: vec![], loc: Loc::default() }));
 	}
 
 	let item = match &nodes[0] {
@@ -34,5 +34,12 @@ fn items(nodes: &[Node]) -> Result<Node, String> {
 	let mut items_vec = vec![item.to_owned()];
 	items_vec.extend(items.to_owned());
 
-	Ok(Node::Items(Items { items: items_vec, location: Location { start: item.location().start, end: items.last().unwrap().location().end } }))
+	let mut loc = item.loc();
+	loc.end = if items.is_empty() {
+		item.loc().end
+	} else {
+		items.last().unwrap().loc().end
+	};
+
+	Ok(Node::Items(Items { items: items_vec, loc }))
 }

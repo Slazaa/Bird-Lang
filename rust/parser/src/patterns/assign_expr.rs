@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -8,7 +8,7 @@ use super::Expr;
 pub struct AssignExpr {
 	pub left: Expr,
 	pub right: Expr,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
@@ -26,5 +26,8 @@ fn assign_id(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", nodes[2]))
 	};
 
-	Ok(Node::AssignExpr(AssignExpr { left: Expr::Id(left.to_owned()), right: right.to_owned(), location: Location { start: left.location.start, end: right.location().end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[3].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::AssignExpr(AssignExpr { left: Expr::Id(left.to_owned()), right: right.to_owned(), loc }))
 }

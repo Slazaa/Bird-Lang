@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location, ASTNode};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -8,7 +8,7 @@ use super::Items;
 pub struct ExternBlock {
 	pub lang: String,
 	pub items: Items,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static EXTERN_BLOCK_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
@@ -26,5 +26,8 @@ fn extern_block(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'extern_block'", nodes[3]))
 	};
 
-	Ok(Node::ExternBlock(ExternBlock { lang: lang.symbol, items, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::ExternBlock(ExternBlock { lang: lang.symbol, items, loc }))
 }

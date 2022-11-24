@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location, ASTNode};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -8,7 +8,7 @@ use super::{Expr, Stmts};
 pub struct IfExpr {
 	pub cond: Expr,
 	pub stmts: Stmts,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static IF_EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
@@ -26,5 +26,8 @@ fn if_expr(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'if_expr'", nodes[3]))
 	};
 
-	Ok(Node::IfExpr(IfExpr { cond, stmts, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::IfExpr(IfExpr { cond, stmts, loc }))
 }

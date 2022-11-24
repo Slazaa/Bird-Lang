@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -15,7 +15,7 @@ pub enum LiteralKind {
 pub struct Literal {
 	pub kind: LiteralKind,
 	pub value: String,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
@@ -41,9 +41,5 @@ fn literal(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", token))
 	};
 
-	Ok(Node::Literal(Literal {
-		kind,
-		value: token.symbol.to_owned(),
-		location: token.location
-	}))
+	Ok(Node::Literal(Literal { kind, value: token.symbol.to_owned(), loc: token.loc.to_owned() }))
 }

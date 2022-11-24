@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -8,7 +8,7 @@ use super::Expr;
 pub struct UnaryExpr {
 	pub op: String,
 	pub val: Expr,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
@@ -28,5 +28,8 @@ fn unary_op(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'unary_op'", nodes[1]))
 	};
 
-	Ok(Node::UnaryExpr(UnaryExpr { op: op.symbol, val: val.to_owned(), location: Location { start: op.location.start, end: val.location().end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[1].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::UnaryExpr(UnaryExpr { op: op.symbol, val: val.to_owned(), loc }))
 }

@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -9,7 +9,7 @@ pub struct BinExpr {
 	pub left: Expr,
 	pub op: String,
 	pub right: Expr,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
@@ -21,7 +21,7 @@ pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
 
 fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {
-		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol.to_owned(), location: x.location }),
+		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol.to_owned(), loc: x.loc.to_owned() }),
 		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[0]))
 	};
 
@@ -35,5 +35,8 @@ fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[2]))
 	};
 
-	Ok(Node::BinExpr(BinExpr { left: left.to_owned(), op: op.symbol, right: right.to_owned(), location: Location { start: left.location().start, end: right.location().end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::BinExpr(BinExpr { left: left.to_owned(), op: op.symbol, right: right.to_owned(), loc }))
 }

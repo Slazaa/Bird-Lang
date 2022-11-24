@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -13,12 +13,12 @@ pub enum Item {
 }
 
 impl Item {
-	pub fn location(&self) -> Location {
+	pub fn loc(&self) -> Loc {
 		match self {
-			Self::ExternBlock(x) => x.location,
-			Self::Func(x) => x.location,
-			Self::FuncProto(x) => x.location,
-			Self::VarDecl(x) => x.location
+			Self::ExternBlock(x) => x.loc.to_owned(),
+			Self::Func(x) => x.loc.to_owned(),
+			Self::FuncProto(x) => x.loc.to_owned(),
+			Self::VarDecl(x) => x.loc.to_owned()
 		}
 	}
 }

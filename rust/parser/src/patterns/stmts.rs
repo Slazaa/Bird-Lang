@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location};
+use parse::{PatternFunc, Loc};
 
 use crate::Node;
 
@@ -7,7 +7,7 @@ use super::Stmt;
 #[derive(Debug, Clone)]
 pub struct Stmts {
 	pub stmts: Vec<Stmt>,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
@@ -18,7 +18,7 @@ pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
 
 fn stmts(nodes: &[Node]) -> Result<Node, String> {
 	if nodes.is_empty() {
-		return Ok(Node::Stmts(Stmts { stmts: vec![], location: Location::default() }));
+		return Ok(Node::Stmts(Stmts { stmts: vec![], loc: Loc::default() }));
 	}
 
 	let stmt = match &nodes[0] {
@@ -34,5 +34,12 @@ fn stmts(nodes: &[Node]) -> Result<Node, String> {
 	let mut stmts_vec = vec![stmt.to_owned()];
 	stmts_vec.extend(stmts.to_owned());
 
-	Ok(Node::Stmts(Stmts { stmts: stmts_vec, location: Location { start: stmt.location().start, end: stmts.last().unwrap().location().end } }))
+	let mut loc = stmt.loc();
+	loc.end = if stmts.is_empty() {
+		stmt.loc().end
+	} else {
+		stmts.last().unwrap().loc().end
+	};
+
+	Ok(Node::Stmts(Stmts { stmts: stmts_vec, loc }))
 }

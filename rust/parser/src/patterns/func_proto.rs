@@ -1,11 +1,11 @@
-use parse::{PatternFunc, Location, ASTNode};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
 #[derive(Debug, Clone)]
 pub struct FuncProto {
 	pub id: String,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static FUNC_PROTO_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
@@ -18,5 +18,8 @@ fn func_proto(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
 	};
 
-	Ok(Node::FuncProto(FuncProto { id, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::FuncProto(FuncProto { id, loc }))
 }

@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Location, ASTNode};
+use parse::{PatternFunc, Loc, ASTNode};
 
 use crate::Node;
 
@@ -8,7 +8,7 @@ use super::Stmts;
 pub struct Func {
 	pub id: String,
 	pub stmts: Stmts,
-	pub location: Location
+	pub loc: Loc
 }
 
 pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
@@ -27,7 +27,10 @@ fn func(nodes: &[Node]) -> Result<Node, String> {
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[4]))
 	};
 
-	Ok(Node::Func(Func { id, stmts, location: Location { start: nodes.first().unwrap().token().unwrap().location.start, end: nodes.last().unwrap().token().unwrap().location.end } }))
+	let mut loc = nodes[0].token().unwrap().loc.to_owned();
+	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+
+	Ok(Node::Func(Func { id, stmts, loc }))
 }
 
 fn func_err(_nodes: &[Node]) -> Result<Node, String> {

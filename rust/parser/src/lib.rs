@@ -1,5 +1,3 @@
-use std::fs;
-
 use parse::{LexerBuilder, ParserBuilder, Token, ASTNode};
 use bird_utils::feedback::*;
 
@@ -120,7 +118,12 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	
 	let mut parser = parser_builder.build();
 
-	match parser.parse(lexer.lex_from_file(filename)) {
+	let lexer_stream = match lexer.lex_from_file(filename) {
+		Ok(x) => x,
+		Err(e) => return Err(Error::unspecified(&format!("{:?}", e)))
+	};
+
+	match parser.parse(lexer_stream) {
 		Ok(x) => Ok(x),
 		Err((e, pos)) => {
 			println!("{:?} at {}", e, pos);
