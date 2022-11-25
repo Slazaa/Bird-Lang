@@ -4,7 +4,6 @@ use std::io::{BufRead, BufReader};
 
 use parse::Loc;
 
-#[derive(Debug)]
 pub enum FeedbackType {
 	Error
 }
@@ -17,7 +16,6 @@ impl Display for FeedbackType {
 	}
 }
 
-#[derive(Debug)]
 pub struct Feedback {
 	feedback_type: FeedbackType,
 	loc: Option<Loc>,
