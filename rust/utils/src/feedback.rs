@@ -4,6 +4,7 @@ use std::io::{BufRead, BufReader};
 
 use parse::Loc;
 
+#[derive(Debug)]
 pub enum FeedbackType {
 	Error
 }
@@ -16,6 +17,7 @@ impl Display for FeedbackType {
 	}
 }
 
+#[derive(Debug)]
 pub struct Feedback {
 	feedback_type: FeedbackType,
 	loc: Option<Loc>,
@@ -81,17 +83,6 @@ impl Feedback {
 
 		result
 	}
-
-	pub fn as_string(&self) -> String {
-		let mut result = String::new();
-		result.push_str(format!("{}: {}", self.feedback_type, self.desc).as_str());
-
-		if let Some(loc) = &self.loc {
-			result.push_str(&Self::arrow_pos(loc));
-		}
-
-		result
-	}
 }
 
 pub struct Error;
@@ -138,5 +129,18 @@ impl Error {
 
 	pub fn unspecified(description: &str) -> Feedback {
 		Feedback::new(FeedbackType::Error, None, description)
+	}
+}
+
+impl Display for Feedback {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let mut res = String::new();
+		res.push_str(format!("{}: {}", self.feedback_type, self.desc).as_str());
+
+		if let Some(loc) = &self.loc {
+			res.push_str(&Self::arrow_pos(loc));
+		}
+
+		write!(f, "{}", res)
 	}
 }
