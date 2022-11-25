@@ -22,17 +22,17 @@ pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
 fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
 	let left = match &nodes[0] {
 		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol.to_owned(), loc: x.loc.to_owned() }),
-		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[0]))
+		_ => return Err(format!("In 'bin_op_int', expected 'INT', found '{:?}'", nodes[0]))
 	};
 
 	let op = match &nodes[1] {
 		Node::Token(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[1]))
+		_ => return Err(format!("In 'bin_op_int', expected 'PLUS', 'MINUS', 'MULT' or 'DIV', found '{:?}'", nodes[1]))
 	};
 
 	let right = match &nodes[2] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'bin_op_int'", nodes[2]))
+		_ => return Err(format!("In 'bin_op_int', expected 'expr', found '{:?}'", nodes[2]))
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

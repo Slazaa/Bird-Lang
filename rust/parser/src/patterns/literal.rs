@@ -29,16 +29,17 @@ pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
 fn literal(nodes: &[Node]) -> Result<Node, String> {
 	let token = match &nodes[0] {
 		Node::Token(x) => x,
-		_ => return Err(format!("Invalid node '{:?}' in 'literal'", nodes[0]))
+		_ => return Err(format!("In 'literal', expected 'BOOL', 'INT', 'FLT', 'CHR' or 'STR', found '{:?}'", nodes[0]))
 	};
 
-	let kind = match token.symbol.as_str() {
+	let kind = match token.name.as_str() {
 		"BOOL" => LiteralKind::Bool,
 		"INT" => LiteralKind::Int,
 		"FLT" => LiteralKind::Flt,
 		"CHR" => LiteralKind::Chr,
 		"STR" => LiteralKind::Str,
-		_ => return Err(format!("Invalid node '{:?}' in 'assign_id'", token))
+		
+		_ => return Err(format!("In 'literal', expected 'BOOL', 'INT', 'FLT', 'CHR' or 'STR', found '{:?}'", token))
 	};
 
 	Ok(Node::Literal(Literal { kind, value: token.symbol.to_owned(), loc: token.loc.to_owned() }))
