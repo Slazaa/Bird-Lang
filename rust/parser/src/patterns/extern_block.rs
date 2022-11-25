@@ -11,11 +11,11 @@ pub struct ExternBlock {
 	pub loc: Loc
 }
 
-pub static EXTERN_BLOCK_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+pub static EXTERN_BLOCK_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 	("extern_block", "EXT STR LCBR items RCBR", extern_block)
 ];
 
-fn extern_block(nodes: &[Node]) -> Result<Node, String> {
+fn extern_block(nodes: &[Node]) -> Result<Node, Feedback> {
 	let lang = match &nodes[1] {
 		Node::Token(x) => x.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'extern_block'", nodes[1]))

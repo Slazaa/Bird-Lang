@@ -12,14 +12,14 @@ pub struct BinExpr {
 	pub loc: Loc
 }
 
-pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
+pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 4] = [
 	("bin_op", "INT PLUS expr", bin_op_int),
 	("bin_op", "INT MINUS expr", bin_op_int),
 	("bin_op", "INT MULT expr", bin_op_int),
 	("bin_op", "INT DIV expr", bin_op_int)
 ];
 
-fn bin_op_int(nodes: &[Node]) -> Result<Node, String> {
+fn bin_op_int(nodes: &[Node]) -> Result<Node, Feedback> {
 	let left = match &nodes[0] {
 		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol.to_owned(), loc: x.loc.to_owned() }),
 		_ => return Err(format!("In 'bin_op_int', expected 'INT', found '{:?}'", nodes[0]))

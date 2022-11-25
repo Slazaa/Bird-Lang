@@ -10,13 +10,13 @@ pub struct Stmts {
 	pub loc: Loc
 }
 
-pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	("stmts", "stmt stmts", stmts),
 	("stmts", "stmt", stmts),
 	("stmts", "", stmts),
 ];
 
-fn stmts(nodes: &[Node]) -> Result<Node, String> {
+fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
 	if nodes.is_empty() {
 		return Ok(Node::Stmts(Stmts { stmts: vec![], loc: Loc::default() }));
 	}

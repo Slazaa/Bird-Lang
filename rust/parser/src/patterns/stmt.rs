@@ -19,12 +19,12 @@ impl Stmt {
 	}
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
 	("stmt", "item", stmt),
 	("stmt", "expr", stmt)
 ];
 
-fn stmt(nodes: &[Node]) -> Result<Node, String> {
+fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(Node::Stmt(match nodes[0].to_owned() {
 		Node::Expr(x) => Stmt::Expr(x),
 		Node::Item(x) => Stmt::Item(x),

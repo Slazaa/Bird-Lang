@@ -11,11 +11,11 @@ pub struct IfExpr {
 	pub loc: Loc
 }
 
-pub static IF_EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+pub static IF_EXPR_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 	("if_expr", "IF expr LCBR stmts RCBR", if_expr)
 ];
 
-fn if_expr(nodes: &[Node]) -> Result<Node, String> {
+fn if_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let cond = match &nodes[1] {
 		Node::Expr(x) => x.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'if_expr'", nodes[1]))

@@ -11,13 +11,13 @@ pub struct UnaryExpr {
 	pub loc: Loc
 }
 
-pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	("unary_op", "MINUS expr", unary_op),
 	("unary_op", "AMP expr", unary_op),
 	("unary_op", "MULT expr", unary_op)
 ];
 
-fn unary_op(nodes: &[Node]) -> Result<Node, String> {
+fn unary_op(nodes: &[Node]) -> Result<Node, Feedback> {
 	let op = match &nodes[0] {
 		Node::Token(x) => x.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'unary_op'", nodes[0]))

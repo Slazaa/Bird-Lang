@@ -26,6 +26,30 @@ pub enum Node {
 	VarDecl(VarDecl)
 }
 
+impl Node {
+	fn loc(&self) -> &Loc {
+		&match self {
+			Self::Token(x) => x.loc,
+			
+			Self::AssignExpr(x) => x.loc,
+			Self::BinExpr(x) => x.loc,
+			Self::Expr(x) => x.loc(),
+			Self::ExternBlock(x) => x.loc,
+			Self::Func(x) => x.loc,
+			Self::FuncProto(x) => x.loc,
+			Self::IfExpr(x) => x.loc,
+			Self::Item(x) => x.loc(),
+			Self::Items(x) => x.loc,
+			Self::Literal(x) => x.loc,
+			Self::Program(x) => x.loc,
+			Self::Stmt(x) => x.loc(),
+			Self::Stmts(x) => x.loc,
+			Self::UnaryExpr(x) => x.loc,
+			Self::VarDecl(x) => x.loc
+		}
+	}
+}
+
 impl ASTNode for Node {
 	fn new_token(token: &Token) -> Self {
 		Self::Token(token.to_owned())
@@ -98,7 +122,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		}
 	}
 */
-	let mut parser_builder = ParserBuilder::<Node>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
+	let mut parser_builder = ParserBuilder::<Node, Feedback>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
 	parser_builder.add_patterns(&ASSIGN_PATTERNS).unwrap();
 	parser_builder.add_patterns(&BIN_OP_PATTERNS).unwrap();
@@ -120,14 +144,14 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 	let lexer_stream = match lexer.lex_from_file(filename) {
 		Ok(x) => x,
-		Err(e) => return Err(Error::unspecified(&format!("{:?}", e)))
+		Err(e) => return Err(Error::unspecified(&format!("{}", e)))
 	};
 
 	match parser.parse(lexer_stream) {
 		Ok(x) => Ok(x),
 		Err((e, pos)) => {
-			println!("{:?} at {}", e, pos);
-			return Err(Error::invalid_syntax(None, &format!("{:?}", e)));
+			println!("{} at {}", e, pos);
+			return Err(Error::invalid_syntax(None, &format!("{}", e)));
 		}
 	}
 }

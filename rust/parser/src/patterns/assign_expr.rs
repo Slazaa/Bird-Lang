@@ -11,11 +11,11 @@ pub struct AssignExpr {
 	pub loc: Loc
 }
 
-pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 	("assign_expr", "ID EQ expr SEMI", assign_id)
 ];
 
-fn assign_id(nodes: &[Node]) -> Result<Node, String> {
+fn assign_id(nodes: &[Node]) -> Result<Node, Feedback> {
 	let left = match &nodes[0] {
 		Node::Token(x) => x,
 		_ => return Err(format!("In 'assign_id', expected 'ID', found '{:?}'", nodes[0]))

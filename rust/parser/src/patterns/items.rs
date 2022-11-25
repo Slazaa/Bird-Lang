@@ -10,13 +10,13 @@ pub struct Items {
 	pub loc: Loc
 }
 
-pub static ITEMS_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+pub static ITEMS_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	("items", "item items", items),
 	("items", "item", items),
 	("items", "", items)
 ];
 
-fn items(nodes: &[Node]) -> Result<Node, String> {
+fn items(nodes: &[Node]) -> Result<Node, Feedback> {
 	if nodes.is_empty() {
 		return Ok(Node::Items(Items { items: vec![], loc: Loc::default() }));
 	}

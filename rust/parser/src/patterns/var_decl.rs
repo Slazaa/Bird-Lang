@@ -1,5 +1,7 @@
 use parse::{PatternFunc, Loc, ASTNode};
 
+use bird_utils::*;
+
 use crate::Node;
 
 use super::Expr;
@@ -12,14 +14,14 @@ pub struct VarDecl {
 	pub loc: Loc
 }
 
-pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node>); 3] = [
+pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	//("var_decl", "VAR ID SEMI", var_decl),
 	("var_decl", "VAR ID EQ expr SEMI", var_decl_expr),
 	("var_decl", "VAR ID COL ID SEMI", var_decl_typed),
 	("var_decl", "VAR ID COL ID EQ expr SEMI", var_decl_typed_expr)
 ];
 /*
-fn var_decl(nodes: &[Node]) -> Result<Node, String> {
+fn var_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'var_decl'", nodes[1]))
@@ -31,10 +33,10 @@ fn var_decl(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::VarDecl(VarDecl { id, var_type: None, val: None, loc }))
 }
 */
-fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
+fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_expr'", nodes[1]))
+		_ => return Err(Error::expected(nodes[1].loc(), "ID", Some(nodes[1])))
 	};
 
 	let val = match &nodes[3] {
@@ -48,7 +50,7 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::VarDecl(VarDecl { id, var_type: None, val, loc }))
 }
 
-fn var_decl_typed(nodes: &[Node]) -> Result<Node, String> {
+fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed'", nodes[1]))
@@ -65,7 +67,7 @@ fn var_decl_typed(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val: None, loc }))
 }
 
-fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, String> {
+fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed_expr'", nodes[1]))

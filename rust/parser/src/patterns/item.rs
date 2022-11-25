@@ -13,24 +13,24 @@ pub enum Item {
 }
 
 impl Item {
-	pub fn loc(&self) -> Loc {
-		match self {
-			Self::ExternBlock(x) => x.loc.to_owned(),
-			Self::Func(x) => x.loc.to_owned(),
-			Self::FuncProto(x) => x.loc.to_owned(),
-			Self::VarDecl(x) => x.loc.to_owned()
+	pub fn loc(&self) -> &Loc {
+		&match self {
+			Self::ExternBlock(x) => x.loc,
+			Self::Func(x) => x.loc,
+			Self::FuncProto(x) => x.loc,
+			Self::VarDecl(x) => x.loc
 		}
 	}
 }
 
-pub static ITEM_PATTERNS: [(&str, &str, PatternFunc<Node>); 4] = [
+pub static ITEM_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 4] = [
 	("item", "extern_block", item),
 	("item", "func", item),
 	("item", "func_proto", item),
 	("item", "var_decl", item)
 ];
 
-fn item(nodes: &[Node]) -> Result<Node, String> {
+fn item(nodes: &[Node]) -> Result<Node, Feedback> {
 	match &nodes[0] {
 		Node::ExternBlock(x) => Ok(Node::Item(Item::ExternBlock(x.to_owned()))),
 		Node::Func(x) => Ok(Node::Item(Item::Func(x.to_owned()))),

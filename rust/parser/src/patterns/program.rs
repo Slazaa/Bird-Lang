@@ -10,12 +10,12 @@ pub struct Program {
 	pub loc: Loc
 }
 
-pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
+pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
 	("program", "stmts", program),
 	("program", "", program)
 ];
 
-fn program(nodes: &[Node]) -> Result<Node, String> {
+fn program(nodes: &[Node]) -> Result<Node, Feedback> {
 	let stmts = match &nodes[0] {
 		Node::Stmts(x) => x.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'program'", nodes[0]))

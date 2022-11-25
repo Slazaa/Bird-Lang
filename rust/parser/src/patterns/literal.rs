@@ -18,7 +18,7 @@ pub struct Literal {
 	pub loc: Loc
 }
 
-pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
+pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
 	("literal", "BOOL", literal),
 	("literal", "INT", literal),
 	("literal", "FLT", literal),
@@ -26,7 +26,7 @@ pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node>); 5] = [
 	("literal", "STR", literal)
 ];
 
-fn literal(nodes: &[Node]) -> Result<Node, String> {
+fn literal(nodes: &[Node]) -> Result<Node, Feedback> {
 	let token = match &nodes[0] {
 		Node::Token(x) => x,
 		_ => return Err(format!("In 'literal', expected 'BOOL', 'INT', 'FLT', 'CHR' or 'STR', found '{:?}'", nodes[0]))

@@ -11,12 +11,12 @@ pub struct Func {
 	pub loc: Loc
 }
 
-pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node>); 2] = [
+pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
 	("func", "FUNC ID LCBR stmts RCBR", func),
 	("func", "FUNC", func_err)
 ];
 
-fn func(nodes: &[Node]) -> Result<Node, String> {
+fn func(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
@@ -33,6 +33,6 @@ fn func(nodes: &[Node]) -> Result<Node, String> {
 	Ok(Node::Func(Func { id, stmts, loc }))
 }
 
-fn func_err(_nodes: &[Node]) -> Result<Node, String> {
+fn func_err(_nodes: &[Node]) -> Result<Node, Feedback> {
 	Err("In 'func', expected '{'".to_owned())
 }

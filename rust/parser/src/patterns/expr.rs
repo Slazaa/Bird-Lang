@@ -16,20 +16,20 @@ pub enum Expr {
 }
 
 impl Expr {
-	pub fn loc(&self) -> Loc {
-		match self {
-			Self::AssignExpr(x) => x.loc.to_owned(),
-			Self::BinExpr(x) => x.loc.to_owned(),
-			Self::IfExpr(x) => x.loc.to_owned(),
-			Self::UnaryExpr(x) => x.loc.to_owned(),
+	pub fn loc(&self) -> &Loc {
+		&match self {
+			Self::AssignExpr(x) => x.loc,
+			Self::BinExpr(x) => x.loc,
+			Self::IfExpr(x) => x.loc,
+			Self::UnaryExpr(x) => x.loc,
 
-			Self::Literal(x) => x.loc.to_owned(),
-			Self::Id(x) => x.loc.to_owned()
+			Self::Literal(x) => x.loc,
+			Self::Id(x) => x.loc
 		}
 	}
 }
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
 	("expr", "assign_expr", expr),
 	("expr", "bin_op", expr),
 	("expr", "if_expr", expr),
@@ -39,7 +39,7 @@ pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node>); 6] = [
 	("expr", "ID", expr)
 ];
 
-fn expr(nodes: &[Node]) -> Result<Node, String> {
+fn expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(match &nodes[0] {
 		Node::AssignExpr(x) => Node::Expr(Expr::AssignExpr(Box::new(x.to_owned()))),
 		Node::BinExpr(x) => Node::Expr(Expr::BinExpr(Box::new(x.to_owned()))),

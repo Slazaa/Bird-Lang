@@ -8,11 +8,11 @@ pub struct FuncProto {
 	pub loc: Loc
 }
 
-pub static FUNC_PROTO_PATTERNS: [(&str, &str, PatternFunc<Node>); 1] = [
+pub static FUNC_PROTO_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 	("func_proto", "FUNC ID SEMI", func_proto)
 ];
 
-fn func_proto(nodes: &[Node]) -> Result<Node, String> {
+fn func_proto(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
