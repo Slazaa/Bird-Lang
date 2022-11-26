@@ -1,6 +1,9 @@
+use parse::Token;
 use bird_parser::*;
 use bird_parser::patterns::*;
-use bird_utils::feedback::{Feedback, Error};
+use bird_utils::*;
+
+use super::c_header;
 
 pub struct Transpiler {
 	found_main: bool
@@ -32,20 +35,23 @@ impl Transpiler {
 		})
 	}
 
+	fn eval_assign_expr(&mut self, assign_expr: &AssignExpr, scope_depth: usize) -> Result<String, Feedback> {
+		Ok(format!("{} = {}", self.eval_expr(&assign_expr.left, scope_depth)?, self.eval_expr(&assign_expr.right, scope_depth)?))
+	}
+
 	fn eval_bin_expr(&mut self, bin_expr: &BinExpr, scope_depth: usize) -> Result<String, Feedback> {
 		Ok(format!("{} {} {}", self.eval_expr(&bin_expr.left, scope_depth)?, bin_expr.op, self.eval_expr(&bin_expr.right, scope_depth)?))
 	}
 
 	fn eval_expr(&mut self, expr: &Expr, scope_depth: usize) -> Result<String, Feedback> {
 		match expr {
+			Expr::AssignExpr(x) => self.eval_assign_expr(x, scope_depth),
 			Expr::BinExpr(x) => self.eval_bin_expr(x, scope_depth),
 			Expr::IfExpr(x) => self.eval_if_stmt(x, scope_depth),
 			Expr::UnaryExpr(x) => self.eval_unary_expr(x, scope_depth),
 
 			Expr::Literal(x) => self.eval_literal(x),
-			Expr::Id(x) => self.eval_id(x),
-
-			_ => todo!("{:#?}", expr)
+			Expr::Id(x) => self.eval_id(x)
 		}
 	}
 
@@ -64,7 +70,7 @@ impl Transpiler {
 			self.found_main = true;
 			"main_".to_owned()
 		} else {
-			(&func.id).to_owned()
+			func.id.to_owned()
 		};
 
 		Ok(format!("\n\
@@ -78,8 +84,8 @@ impl Transpiler {
 		Ok(format!("void {}(void)\n", func_proto.id))
 	}
 
-	fn eval_id(&mut self, id: &String) -> Result<String, Feedback> {
-		Ok(format!("{}", id))
+	fn eval_id(&mut self, id: &Token) -> Result<String, Feedback> {
+		Ok(format!("{}", id.symbol))
 	}
 
 	fn eval_if_expr(&mut self, if_stmt: &IfExpr, scope_depth: usize) -> Result<String, Feedback> {
@@ -89,11 +95,17 @@ impl Transpiler {
 	fn eval_if_stmt(&mut self, if_stmt: &IfExpr, scope_depth: usize) -> Result<String, Feedback> {
 		let scope_tabs = "\t".repeat(scope_depth);
 
+		let mut stmts = self.eval_stmts(&if_stmt.stmts, scope_depth + 1)?;
+
+		if stmts.is_empty() {
+			stmts = "\n".to_owned();
+		}
+
 		Ok(format!("\n\
 {scope_tabs}if ({}) {{
 {}\
 {scope_tabs}}}\n\
-		", self.eval_expr(&if_stmt.cond, scope_depth)?, self.eval_stmts(&if_stmt.stmts, scope_depth + 1)?))
+		", self.eval_expr(&if_stmt.cond, scope_depth)?, stmts))
 	}
 
 	fn eval_item(&mut self, item: &Item, scope_depth: usize) -> Result<String, Feedback> {
@@ -120,18 +132,25 @@ impl Transpiler {
 	}
 
 	fn eval_program(&mut self, program: &Program) -> Result<String, Feedback> {
-		if let Some(stmts) = &program.stmts {
-			self.eval_stmts(stmts, 0)
-		} else {
-			Ok("".to_owned())
-		}
+		self.eval_stmts(&program.stmts, 0)
 	}
 
 	fn eval_stmt(&mut self, stmt: &Stmt, scope_depth: usize) -> Result<String, Feedback> {
-		match stmt {
-			Stmt::Expr(x) => self.eval_expr(x, scope_depth),
-			Stmt::Item(x) => self.eval_item(x, scope_depth)
-		}
+		let scope_tabs = "\t".repeat(scope_depth);
+
+		Ok(match stmt {
+			Stmt::Expr(x) => {
+				let expr = self.eval_expr(x, scope_depth)?;
+
+				let expr = match x {
+					Expr::IfExpr(_) => expr,
+					_ => scope_tabs + &expr + ";\n"
+				};
+
+				expr
+			}
+			Stmt::Item(x) => self.eval_item(x, scope_depth)? + ";\n"
+		})
 	}
 
 	fn eval_stmts(&mut self, stmts: &Stmts, scope_depth: usize) -> Result<String, Feedback> {
@@ -160,30 +179,39 @@ impl Transpiler {
 		};
 
 		if let Some(val) = &var_decl.val {
-			Ok(format!("{scope_tabs}{} {} = {};\n", var_type, var_decl.id, self.eval_expr(val, scope_depth)?))
+			Ok(format!("{scope_tabs}{} {} = {}", var_type, var_decl.id, self.eval_expr(val, scope_depth)?))
 		} else {
-			Ok(format!("{scope_tabs}{} {};\n", var_type, var_decl.id))
+			Ok(format!("{scope_tabs}{} {}", var_type, var_decl.id))
 		}
 	}
 }
 
-pub fn transpile(ast: &Node) -> Result<String, Feedback> {
+pub fn transpile(ast: &Node) -> Result<(String, Option<String>), Feedback> {
 	let mut transpiler = Transpiler::new();
 
 	if let Node::Program(program) = ast {
-		let mut source = transpiler.eval_program(program)?;
+		let mut src = transpiler.eval_program(program)?;
 
 		if transpiler.found_main() {
-			source.push_str("\
-\n
+			src.push_str("
 int main(int argc, char** argv) {
 	main_();
-	return 0;
-}\
-			");
-		}
 
-		Ok(source)
+	return 0;
+}
+			");
+
+			Ok((src, None))
+		} else {
+			let filename = program.loc.filename.as_ref().unwrap().split(".").collect::<Vec<&str>>()[0];
+
+			src = format!("\
+#include \"{}.h\"
+{}\
+			", filename, src);
+
+			Ok((src, Some(c_header::transpile(ast)?)))
+		}
 	} else {
 		Err(Error::unspecified("Expected Program"))
 	}

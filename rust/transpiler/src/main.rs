@@ -10,18 +10,24 @@ fn main() {
 	let ast = match bird_parser::parse(&args[0]) {
 		Ok(x) => x,
 		Err(e) => {
-			println!("{}", e.as_string());
+			println!("{}", e);
 			return;
 		}
 	};
 
-	let transpiled_code = match transpile::c::transpile(&ast) {
+	let (source, header) = match transpile::c::transpile(&ast) {
 		Ok(x) => x,
 		Err(e) => {
-			println!("{}", e.as_string());
+			println!("{}", e);
 			return;
 		}
 	};
 
-	println!("{}", transpiled_code);
+	println!("----- SOURCE -----");
+	println!("{}", source);
+
+	if let Some(header) = header {
+		println!("\n----- HEADER -----");
+		println!("{}", header);
+	}
 }
