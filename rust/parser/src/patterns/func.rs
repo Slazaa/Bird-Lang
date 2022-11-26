@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -19,12 +20,12 @@ pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
 fn func(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let stmts = match &nodes[3] {
 		Node::Stmts(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[4]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
@@ -33,6 +34,11 @@ fn func(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(Node::Func(Func { id, stmts, loc }))
 }
 
-fn func_err(_nodes: &[Node]) -> Result<Node, Feedback> {
-	Err("In 'func', expected '{'".to_owned())
+fn func_err(nodes: &[Node]) -> Result<Node, Feedback> {
+	let (loc, found) = match nodes.get(1) {
+		Some(x) => (x.loc(), Some(x.token().unwrap().symbol.as_str())),
+		None => (nodes[0].loc(), None)
+	};
+
+	Err(Error::expected(loc, "'{'", found))
 }

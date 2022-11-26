@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -23,7 +24,7 @@ fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
 
 	let stmt = match &nodes[0] {
 		Node::Stmt(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'stmts'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let stmts = match nodes.get(1) {
@@ -34,12 +35,12 @@ fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut stmts_vec = vec![stmt.to_owned()];
 	stmts_vec.extend(stmts.to_owned());
 
-	let mut loc = stmt.loc();
+	let mut loc = stmt.loc().to_owned();
 	loc.end = if stmts.is_empty() {
-		stmt.loc().end
+		stmt.loc().end.to_owned()
 	} else {
-		stmts.last().unwrap().loc().end
+		stmts.last().unwrap().loc().end.to_owned()
 	};
 
-	Ok(Node::Stmts(Stmts { stmts: stmts_vec, loc }))
+	Ok(Node::Stmts(Stmts { stmts: stmts_vec, loc: loc.to_owned() }))
 }

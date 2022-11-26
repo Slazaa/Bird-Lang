@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -22,17 +23,17 @@ pub static BIN_OP_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 4] = [
 fn bin_op_int(nodes: &[Node]) -> Result<Node, Feedback> {
 	let left = match &nodes[0] {
 		Node::Token(x) => Expr::Literal(Literal { kind: LiteralKind::Int, value: x.symbol.to_owned(), loc: x.loc.to_owned() }),
-		_ => return Err(format!("In 'bin_op_int', expected 'INT', found '{:?}'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let op = match &nodes[1] {
 		Node::Token(x) => x.to_owned(),
-		_ => return Err(format!("In 'bin_op_int', expected 'PLUS', 'MINUS', 'MULT' or 'DIV', found '{:?}'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let right = match &nodes[2] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("In 'bin_op_int', expected 'expr', found '{:?}'", nodes[2]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

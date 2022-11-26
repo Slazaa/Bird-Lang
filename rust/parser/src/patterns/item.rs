@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -14,11 +15,11 @@ pub enum Item {
 
 impl Item {
 	pub fn loc(&self) -> &Loc {
-		&match self {
-			Self::ExternBlock(x) => x.loc,
-			Self::Func(x) => x.loc,
-			Self::FuncProto(x) => x.loc,
-			Self::VarDecl(x) => x.loc
+		match self {
+			Self::ExternBlock(x) => &x.loc,
+			Self::Func(x) => &x.loc,
+			Self::FuncProto(x) => &x.loc,
+			Self::VarDecl(x) => &x.loc
 		}
 	}
 }
@@ -36,6 +37,6 @@ fn item(nodes: &[Node]) -> Result<Node, Feedback> {
 		Node::Func(x) => Ok(Node::Item(Item::Func(x.to_owned()))),
 		Node::FuncProto(x) => Ok(Node::Item(Item::FuncProto(x.to_owned()))),
 		Node::VarDecl(x) => Ok(Node::Item(Item::VarDecl(x.to_owned()))),
-		_ => Err(format!("Invalid node '{:?}' in 'item'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	}
 }

@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -23,7 +24,7 @@ fn items(nodes: &[Node]) -> Result<Node, Feedback> {
 
 	let item = match &nodes[0] {
 		Node::Item(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'items'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let items = match nodes.get(1) {
@@ -34,12 +35,12 @@ fn items(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut items_vec = vec![item.to_owned()];
 	items_vec.extend(items.to_owned());
 
-	let mut loc = item.loc();
+	let mut loc = item.loc().to_owned();
 	loc.end = if items.is_empty() {
-		item.loc().end
+		item.loc().end.to_owned()
 	} else {
-		items.last().unwrap().loc().end
+		items.last().unwrap().loc().end.to_owned()
 	};
 
-	Ok(Node::Items(Items { items: items_vec, loc }))
+	Ok(Node::Items(Items { items: items_vec, loc: loc.to_owned() }))
 }

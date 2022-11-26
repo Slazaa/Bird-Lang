@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, Token};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -17,14 +18,14 @@ pub enum Expr {
 
 impl Expr {
 	pub fn loc(&self) -> &Loc {
-		&match self {
-			Self::AssignExpr(x) => x.loc,
-			Self::BinExpr(x) => x.loc,
-			Self::IfExpr(x) => x.loc,
-			Self::UnaryExpr(x) => x.loc,
+		match self {
+			Self::AssignExpr(x) => &x.loc,
+			Self::BinExpr(x) => &x.loc,
+			Self::IfExpr(x) => &x.loc,
+			Self::UnaryExpr(x) => &x.loc,
 
-			Self::Literal(x) => x.loc,
-			Self::Id(x) => x.loc
+			Self::Literal(x) => &x.loc,
+			Self::Id(x) => &x.loc
 		}
 	}
 }
@@ -49,6 +50,6 @@ fn expr(nodes: &[Node]) -> Result<Node, Feedback> {
 		Node::Literal(x) => Node::Expr(Expr::Literal(x.to_owned())),
 		Node::Token(x) => Node::Expr(Expr::Id(x.to_owned())),
 		
-		_ => return Err(format!("Invalid node '{:?}' in 'expr'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	})
 }

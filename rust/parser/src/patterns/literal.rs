@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -29,7 +30,7 @@ pub static LITERAL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
 fn literal(nodes: &[Node]) -> Result<Node, Feedback> {
 	let token = match &nodes[0] {
 		Node::Token(x) => x,
-		_ => return Err(format!("In 'literal', expected 'BOOL', 'INT', 'FLT', 'CHR' or 'STR', found '{:?}'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let kind = match token.name.as_str() {
@@ -39,7 +40,7 @@ fn literal(nodes: &[Node]) -> Result<Node, Feedback> {
 		"CHR" => LiteralKind::Chr,
 		"STR" => LiteralKind::Str,
 		
-		_ => return Err(format!("In 'literal', expected 'BOOL', 'INT', 'FLT', 'CHR' or 'STR', found '{:?}'", token))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	Ok(Node::Literal(Literal { kind, value: token.symbol.to_owned(), loc: token.loc.to_owned() }))

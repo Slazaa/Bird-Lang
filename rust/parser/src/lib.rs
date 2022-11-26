@@ -1,5 +1,5 @@
-use parse::{LexerBuilder, ParserBuilder, Token, ASTNode};
-use bird_utils::feedback::*;
+use parse::{LexerBuilder, ParserBuilder, Token, ASTNode, Loc};
+use bird_utils::*;
 
 pub mod patterns;
 
@@ -28,24 +28,24 @@ pub enum Node {
 
 impl Node {
 	fn loc(&self) -> &Loc {
-		&match self {
-			Self::Token(x) => x.loc,
+		match self {
+			Self::Token(x) => &x.loc,
 			
-			Self::AssignExpr(x) => x.loc,
-			Self::BinExpr(x) => x.loc,
+			Self::AssignExpr(x) => &x.loc,
+			Self::BinExpr(x) => &x.loc,
 			Self::Expr(x) => x.loc(),
-			Self::ExternBlock(x) => x.loc,
-			Self::Func(x) => x.loc,
-			Self::FuncProto(x) => x.loc,
-			Self::IfExpr(x) => x.loc,
+			Self::ExternBlock(x) => &x.loc,
+			Self::Func(x) => &x.loc,
+			Self::FuncProto(x) => &x.loc,
+			Self::IfExpr(x) => &x.loc,
 			Self::Item(x) => x.loc(),
-			Self::Items(x) => x.loc,
-			Self::Literal(x) => x.loc,
-			Self::Program(x) => x.loc,
+			Self::Items(x) => &x.loc,
+			Self::Literal(x) => &x.loc,
+			Self::Program(x) => &x.loc,
 			Self::Stmt(x) => x.loc(),
-			Self::Stmts(x) => x.loc,
-			Self::UnaryExpr(x) => x.loc,
-			Self::VarDecl(x) => x.loc
+			Self::Stmts(x) => &x.loc,
+			Self::UnaryExpr(x) => &x.loc,
+			Self::VarDecl(x) => &x.loc
 		}
 	}
 }

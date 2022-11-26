@@ -7,6 +7,6 @@ fn main() {
 
 	match bird_parser::parse(&args[0]) {
 		Ok(x) => println!("{:#?}", x),
-		Err(e) => println!("{}", e.as_string())
+		Err(e) => println!("{}", e)
 	};
 }

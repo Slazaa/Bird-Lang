@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -18,12 +19,12 @@ pub static IF_EXPR_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 fn if_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let cond = match &nodes[1] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'if_expr'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let stmts = match &nodes[3] {
 		Node::Stmts(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'if_expr'", nodes[3]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

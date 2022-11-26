@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -18,12 +19,12 @@ pub static ASSIGN_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
 fn assign_id(nodes: &[Node]) -> Result<Node, Feedback> {
 	let left = match &nodes[0] {
 		Node::Token(x) => x,
-		_ => return Err(format!("In 'assign_id', expected 'ID', found '{:?}'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let right = match &nodes[2] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("In 'assign_id', expected 'expr', founc '{:?}'", nodes[2]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

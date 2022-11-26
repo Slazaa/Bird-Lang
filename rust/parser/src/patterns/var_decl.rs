@@ -36,12 +36,12 @@ fn var_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(Error::expected(nodes[1].loc(), "ID", Some(nodes[1])))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let val = match &nodes[3] {
 		Node::Expr(expr) => Some(expr.to_owned()),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_expr'", nodes[3]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
@@ -53,12 +53,12 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let var_type = match &nodes[3] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
@@ -70,17 +70,17 @@ fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed_expr'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let var_type = match &nodes[3] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed_expr'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let val = match &nodes[5] {
 		Node::Expr(expr) => Some(expr.to_owned()),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl_typed_expr'", nodes[3]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

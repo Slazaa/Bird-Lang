@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -15,7 +16,7 @@ pub static FUNC_PROTO_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] =
 fn func_proto(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'func'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

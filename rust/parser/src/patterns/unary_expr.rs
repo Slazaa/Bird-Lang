@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -20,12 +21,12 @@ pub static UNARY_OP_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 fn unary_op(nodes: &[Node]) -> Result<Node, Feedback> {
 	let op = match &nodes[0] {
 		Node::Token(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'unary_op'", nodes[0]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let val = match &nodes[1] {
 		Node::Expr(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'unary_op'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();

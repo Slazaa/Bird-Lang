@@ -1,4 +1,5 @@
 use parse::{PatternFunc, Loc, ASTNode};
+use bird_utils::*;
 
 use crate::Node;
 
@@ -18,12 +19,12 @@ pub static EXTERN_BLOCK_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1]
 fn extern_block(nodes: &[Node]) -> Result<Node, Feedback> {
 	let lang = match &nodes[1] {
 		Node::Token(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'extern_block'", nodes[1]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let items = match &nodes[3] {
 		Node::Items(x) => x.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'extern_block'", nodes[3]))
+		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
