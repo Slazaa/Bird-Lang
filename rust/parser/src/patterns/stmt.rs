@@ -21,8 +21,8 @@ impl Stmt {
 }
 
 pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
-	("stmt", "item", stmt),
-	("stmt", "expr", stmt)
+	("stmt", "item SEMI", stmt),
+	("stmt", "expr SEMI", stmt)
 ];
 
 fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {

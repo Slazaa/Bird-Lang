@@ -142,12 +142,18 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	
 	let mut parser = parser_builder.build();
 
-	let lexer_stream = match lexer.lex_from_file(filename) {
+	let tokens = match lexer.lex_from_file::<Feedback>(filename) {
 		Ok(x) => x,
-		Err(e) => return Err(Error::unspecified(&format!("{}", e)))
+		Err((e, pos)) => {
+			if let Some(pos) = pos {
+				return Err(Error::unspecified(&format!("{} at {}", e, pos)))
+			} else {
+				return Err(Error::unspecified(&format!("{}", e)))
+			}
+		}
 	};
 
-	match parser.parse(lexer_stream) {
+	match parser.parse(&tokens) {
 		Ok(x) => Ok(x),
 		Err((e, pos)) => {
 			println!("{} at {}", e, pos);
