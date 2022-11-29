@@ -141,7 +141,13 @@ impl Display for Feedback {
 		if let Some(loc) = &self.loc {
 			res.push_str(&Self::arrow_pos(loc));
 		}
+
+		write!(f, "{}", res)
 */
-		write!(f, "{}", Self::arrow_pos(loc))
+		if let Some(loc) = &self.loc {
+			write!(f, "{}", Self::arrow_pos(loc))
+		} else {
+			write!(f, "{}: {}", self.feedback_type, self.desc)
+		}
 	}
 }
