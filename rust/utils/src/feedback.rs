@@ -134,7 +134,6 @@ impl Error {
 
 impl Display for Feedback {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-/*
 		let mut res = String::new();
 		res.push_str(format!("{}: {}", self.feedback_type, self.desc).as_str());
 
@@ -143,13 +142,5 @@ impl Display for Feedback {
 		}
 
 		write!(f, "{}", res)
-*/
-		println!("Test!");
-	
-		if let Some(loc) = &self.loc {
-			write!(f, "{}", Self::arrow_pos(loc))
-		} else {
-			write!(f, "{}: {}", self.feedback_type, self.desc)
-		}
 	}
 }
