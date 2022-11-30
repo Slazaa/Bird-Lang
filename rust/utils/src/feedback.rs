@@ -145,7 +145,7 @@ impl Display for Feedback {
 		write!(f, "{}", res)
 */
 		if let Some(loc) = &self.loc {
-			write!(f, "{}", Self::arrow_pos(loc))
+			write!(f, "{}", Self::arrow_pos(&self.loc))
 		} else {
 			write!(f, "{}: {}", self.feedback_type, self.desc)
 		}
