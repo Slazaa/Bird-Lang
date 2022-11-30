@@ -144,6 +144,8 @@ impl Display for Feedback {
 
 		write!(f, "{}", res)
 */
+		println!("Test!");
+	
 		if let Some(loc) = &self.loc {
 			write!(f, "{}", Self::arrow_pos(loc))
 		} else {
