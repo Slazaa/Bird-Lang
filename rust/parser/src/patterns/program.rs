@@ -11,9 +11,8 @@ pub struct Program {
 	pub loc: Loc
 }
 
-pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
-	("program", "stmts", program),
-	("program", "", program)
+pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
+	("program", "stmts", program)
 ];
 
 fn program(nodes: &[Node]) -> Result<Node, Feedback> {

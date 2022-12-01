@@ -1,4 +1,4 @@
-use parse::{LexerBuilder, ParserBuilder, Token, ASTNode, Loc};
+use parse::{LexerBuilder, ParserBuilder, Token, ASTNode, Loc, LexerError, ParserError};
 use bird_utils::*;
 
 pub mod patterns;
@@ -144,20 +144,27 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 	let tokens = match lexer.lex_from_file::<Feedback>(filename) {
 		Ok(x) => x,
-		Err((e, pos)) => {
-			if let Some(pos) = pos {
-				return Err(Error::unspecified(&format!("{} at {}", e, pos)))
-			} else {
-				return Err(Error::unspecified(&format!("{}", e)))
-			}
+		Err(e) => {
+			return Err(match e {
+				LexerError::FileNotFound(filename) => Error::no_file_or_dir(&filename),
+				LexerError::InvalidToken(pos) => {
+					let loc = Loc { filename: None, start: pos.to_owned(), end: pos };
+					Error::invalid_syntax(Some(&loc), "Invalid token")
+				}
+			})
 		}
 	};
 
 	match parser.parse(&tokens) {
 		Ok(x) => Ok(x),
-		Err((e, pos)) => {
-			println!("{} at {}", e, pos);
-			return Err(Error::invalid_syntax(None, &format!("{}", e)));
+		Err(e) => {
+			Err(match e {
+				ParserError::InvalidPatternName(pattern_name) => Error::unspecified(&format!("Invalid pattern name: '{}'", pattern_name)),
+				ParserError::NotMatching(_) => Error::invalid_syntax(None, "Could not create program"),
+				ParserError::PatternFunc(feedback) => feedback,
+				ParserError::TokenRemaining => Error::unspecified("Unevaluated tokens remaining"),
+				ParserError::UnknownElem(elem) => panic!("Unknown element: '{}'", elem)
+			})
 		}
 	}
 }
