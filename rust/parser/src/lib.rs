@@ -22,6 +22,7 @@ pub enum Node {
 	Program(Program),
 	Stmt(Stmt),
 	Stmts(Stmts),
+	Type(Type),
 	UnaryExpr(UnaryExpr),
 	VarDecl(VarDecl)
 }
@@ -44,6 +45,7 @@ impl Node {
 			Self::Program(x) => &x.loc,
 			Self::Stmt(x) => x.loc(),
 			Self::Stmts(x) => &x.loc,
+			Self::Type(x) => &x.loc,
 			Self::UnaryExpr(x) => &x.loc,
 			Self::VarDecl(x) => &x.loc
 		}
@@ -137,6 +139,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMT_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMTS_PATTERNS).unwrap();
+	parser_builder.add_patterns(&TYPE_PATTERNS).unwrap();
 	parser_builder.add_patterns(&UNARY_OP_PATTERNS).unwrap();
 	parser_builder.add_patterns(&VAR_DECL_PATTERNS).unwrap();
 	

@@ -4,12 +4,12 @@ use bird_utils::*;
 
 use crate::Node;
 
-use super::Expr;
+use super::{Expr, Type};
 
 #[derive(Debug, Clone)]
 pub struct VarDecl {
 	pub id: String,
-	pub var_type: Option<String>,
+	pub var_type: Option<Type>,
 	pub val: Option<Expr>,
 	pub loc: Loc
 }
@@ -17,8 +17,8 @@ pub struct VarDecl {
 pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	//("var_decl", "VAR ID SEMI", var_decl),
 	("var_decl", "VAR ID EQ expr SEMI", var_decl_expr),
-	("var_decl", "VAR ID COL ID SEMI", var_decl_typed),
-	("var_decl", "VAR ID COL ID EQ expr SEMI", var_decl_typed_expr)
+	("var_decl", "VAR ID COL type SEMI", var_decl_typed),
+	("var_decl", "VAR ID COL type EQ expr SEMI", var_decl_typed_expr)
 ];
 /*
 fn var_decl(nodes: &[Node]) -> Result<Node, Feedback> {
@@ -57,7 +57,7 @@ fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 	};
 
 	let var_type = match &nodes[3] {
-		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
+		Node::Type(x) => x.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
@@ -74,7 +74,7 @@ fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	};
 
 	let var_type = match &nodes[3] {
-		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
+		Node::Type(x) => x.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 

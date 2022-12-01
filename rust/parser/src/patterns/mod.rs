@@ -11,6 +11,7 @@ mod literal;
 mod program;
 mod stmt;
 mod stmts;
+mod type_;
 mod unary_expr;
 mod var_decl;
 
@@ -27,5 +28,6 @@ pub use literal::*;
 pub use program::*;
 pub use stmt::*;
 pub use stmts::*;
+pub use type_::*;
 pub use unary_expr::*;
 pub use var_decl::*;
