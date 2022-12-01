@@ -10,7 +10,7 @@ use super::{Expr, Type};
 pub struct ConstDecl {
 	pub id: String,
 	pub var_type: Option<Type>,
-	pub val: Option<Expr>,
+	pub val: Expr,
 	pub loc: Loc
 }
 
