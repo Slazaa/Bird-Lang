@@ -83,6 +83,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("EXT",   r"(^extern)"),
 		("IF",    r"(^if)"),
 		("IMP",   r"(^import)"),
+		("MUT",   r"(^mut)"),
 		("VAR",   r"(^var)"),
 
 		// Operators
