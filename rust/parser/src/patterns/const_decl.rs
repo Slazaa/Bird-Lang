@@ -26,7 +26,7 @@ fn const_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	};
 
 	let val = match &nodes[3] {
-		Node::Expr(expr) => Some(expr.to_owned()),
+		Node::Expr(expr) => expr.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
@@ -48,7 +48,7 @@ fn const_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	};
 
 	let val = match &nodes[5] {
-		Node::Expr(expr) => Some(expr.to_owned()),
+		Node::Expr(expr) => expr.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
