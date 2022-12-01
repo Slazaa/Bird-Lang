@@ -37,7 +37,7 @@ fn bin_op_int(nodes: &[Node]) -> Result<Node, Feedback> {
 	};
 
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+	loc.end = nodes[2].loc().end.to_owned();
 
 	Ok(Node::BinExpr(BinExpr { left: left.to_owned(), op: op.symbol, right: right.to_owned(), loc }))
 }

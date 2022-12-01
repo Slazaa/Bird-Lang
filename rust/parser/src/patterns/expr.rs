@@ -3,12 +3,13 @@ use bird_utils::*;
 
 use crate::Node;
 
-use super::{Literal, IfExpr, AssignExpr, BinExpr, UnaryExpr};
+use super::{Literal, IfExpr, AssignExpr, BinExpr, UnaryExpr, FuncCall};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
 	AssignExpr(Box<AssignExpr>),
 	BinExpr(Box<BinExpr>),
+	FuncCall(Box<FuncCall>),
 	IfExpr(Box<IfExpr>),
 	UnaryExpr(Box<UnaryExpr>),
 
@@ -21,6 +22,7 @@ impl Expr {
 		match self {
 			Self::AssignExpr(x) => &x.loc,
 			Self::BinExpr(x) => &x.loc,
+			Self::FuncCall(x) => &x.loc,
 			Self::IfExpr(x) => &x.loc,
 			Self::UnaryExpr(x) => &x.loc,
 
@@ -30,9 +32,10 @@ impl Expr {
 	}
 }
 
-pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
+pub static EXPR_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 7] = [
 	("expr", "assign_expr", expr),
 	("expr", "bin_op", expr),
+	("expr", "func_call", expr),
 	("expr", "if_expr", expr),
 	("expr", "unary_op", expr),
 
@@ -44,6 +47,7 @@ fn expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(match &nodes[0] {
 		Node::AssignExpr(x) => Node::Expr(Expr::AssignExpr(Box::new(x.to_owned()))),
 		Node::BinExpr(x) => Node::Expr(Expr::BinExpr(Box::new(x.to_owned()))),
+		Node::FuncCall(x) => Node::Expr(Expr::FuncCall(Box::new(x.to_owned()))),
 		Node::IfExpr(x) => Node::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
 		Node::UnaryExpr(x) => Node::Expr(Expr::UnaryExpr(Box::new(x.to_owned()))),
 

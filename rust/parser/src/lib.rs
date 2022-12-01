@@ -14,8 +14,9 @@ pub enum Node {
 	ConstDecl(ConstDecl),
 	Expr(Expr),
 	ExternBlock(ExternBlock),
-	Func(Func),
+	FuncCall(FuncCall),
 	FuncProto(FuncProto),
+	Func(Func),
 	IfExpr(IfExpr),
 	Item(Item),
 	Items(Items),
@@ -38,8 +39,9 @@ impl Node {
 			Self::ConstDecl(x) => &x.loc,
 			Self::Expr(x) => x.loc(),
 			Self::ExternBlock(x) => &x.loc,
-			Self::Func(x) => &x.loc,
+			Self::FuncCall(x) => &x.loc,
 			Self::FuncProto(x) => &x.loc,
+			Self::Func(x) => &x.loc,
 			Self::IfExpr(x) => &x.loc,
 			Self::Item(x) => x.loc(),
 			Self::Items(x) => &x.loc,
@@ -135,6 +137,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&CONST_DECL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXTERN_BLOCK_PATTERNS).unwrap();
+	parser_builder.add_patterns(&FUNC_CALL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
