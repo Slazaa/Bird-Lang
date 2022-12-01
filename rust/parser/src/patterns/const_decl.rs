@@ -7,35 +7,20 @@ use crate::Node;
 use super::{Expr, Type};
 
 #[derive(Debug, Clone)]
-pub struct VarDecl {
+pub struct ConstDecl {
 	pub id: String,
 	pub var_type: Option<Type>,
 	pub val: Option<Expr>,
 	pub loc: Loc
 }
 
-pub static VAR_DECL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
-	//("var_decl", "VAR ID SEMI", var_decl),
-	("var_decl", "VAR ID EQ expr SEMI", var_decl_expr),
-	("var_decl", "VAR ID COL type SEMI", var_decl_typed),
-	("var_decl", "VAR ID COL type EQ expr SEMI", var_decl_typed_expr)
+pub static CONST_DECL_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
+	("const_decl", "CONST ID EQ expr SEMI", const_decl),
+	("const_decl", "CONST ID COL type SEMI", const_decl_typed),
+	("const_decl", "CONST ID COL type EQ expr SEMI", const_decl_typed_expr)
 ];
 
-/*
-fn var_decl(nodes: &[Node]) -> Result<Node, Feedback> {
-	let id = match &nodes[1] {
-		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
-		_ => return Err(format!("Invalid node '{:?}' in 'var_decl'", nodes[1]))
-	};
-
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
-
-	Ok(Node::VarDecl(VarDecl { id, var_type: None, val: None, loc }))
-}
-*/
-
-fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
+fn const_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
@@ -49,10 +34,10 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: None, val, loc }))
+	Ok(Node::ConstDecl(ConstDecl { id, var_type: None, val, loc }))
 }
 
-fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
+fn const_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
@@ -66,10 +51,10 @@ fn var_decl_typed(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val: None, loc }))
+	Ok(Node::ConstDecl(ConstDecl { id, var_type: Some(var_type), val: None, loc }))
 }
 
-fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
+fn const_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let id = match &nodes[1] {
 		Node::Token(token) if token.name == "ID" => token.symbol.to_owned(),
 		_ => panic!("If you see this, that means the dev does bad work")
@@ -88,5 +73,5 @@ fn var_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[6].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::VarDecl(VarDecl { id, var_type: Some(var_type), val, loc }))
+	Ok(Node::ConstDecl(ConstDecl { id, var_type: Some(var_type), val, loc }))
 }

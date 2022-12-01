@@ -1,5 +1,6 @@
 mod assign_expr;
 mod bin_expr;
+mod const_decl;
 mod expr;
 mod extern_block;
 mod item;
@@ -17,6 +18,7 @@ mod var_decl;
 
 pub use assign_expr::*;
 pub use bin_expr::*;
+pub use const_decl::*;
 pub use expr::*;
 pub use extern_block::*;
 pub use item::*;
