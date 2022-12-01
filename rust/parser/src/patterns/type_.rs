@@ -18,7 +18,7 @@ pub struct Type {
 	pub loc: Loc
 }
 
-pub static TYPE_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
+pub static TYPE_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
 	("type", "ID", type_),
 	("type", "MULT ID", type_ptr),
 	("type", "MULT MUT ID", type_ptr_mut)
