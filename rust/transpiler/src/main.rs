@@ -26,8 +26,6 @@ fn main() {
 	println!("----- SOURCE -----");
 	println!("{}", source);
 
-	if let Some(header) = header {
-		println!("\n----- HEADER -----");
-		println!("{}", header);
-	}
+	println!("\n----- HEADER -----");
+	println!("{}", header);
 }
