@@ -20,10 +20,21 @@ impl Stmt {
 	}
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
+	("stmt", "PUB item", pub_item),
 	("stmt", "item", stmt),
 	("stmt", "expr SEMI", stmt)
 ];
+
+fn pub_item(nodes: &[Node]) -> Result<Node, Feedback> {
+	Ok(Node::Stmt(Stmt::Item(match nodes[1].to_owned() {
+		Node::Item(mut x) => {
+			*x.public_mut() = true;
+			x
+		}
+		_ => panic!("If you see this, that means the dev does bad work")
+	})))
+}
 
 fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(Node::Stmt(match nodes[0].to_owned() {

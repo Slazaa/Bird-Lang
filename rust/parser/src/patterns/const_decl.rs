@@ -8,6 +8,7 @@ use super::{Expr, Type};
 
 #[derive(Debug, Clone)]
 pub struct ConstDecl {
+	pub public: bool,
 	pub id: String,
 	pub var_type: Option<Type>,
 	pub val: Expr,
@@ -33,7 +34,7 @@ fn const_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::ConstDecl(ConstDecl { id, var_type: None, val, loc }))
+	Ok(Node::ConstDecl(ConstDecl { public: false, id, var_type: None, val, loc }))
 }
 
 fn const_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
@@ -55,5 +56,5 @@ fn const_decl_typed_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[6].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::ConstDecl(ConstDecl { id, var_type: Some(var_type), val, loc }))
+	Ok(Node::ConstDecl(ConstDecl { public: false, id, var_type: Some(var_type), val, loc }))
 }

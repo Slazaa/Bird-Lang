@@ -5,6 +5,7 @@ use crate::Node;
 
 #[derive(Debug, Clone)]
 pub struct FuncProto {
+	pub public: bool,
 	pub id: String,
 	pub loc: Loc
 }
@@ -22,5 +23,5 @@ fn func_proto(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::FuncProto(FuncProto { id, loc }))
+	Ok(Node::FuncProto(FuncProto { public: false, id, loc }))
 }

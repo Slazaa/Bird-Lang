@@ -19,7 +19,6 @@ pub enum Node {
 	Func(Func),
 	IfExpr(IfExpr),
 	Item(Item),
-	Items(Items),
 	Literal(Literal),
 	Program(Program),
 	Stmt(Stmt),
@@ -44,7 +43,6 @@ impl Node {
 			Self::Func(x) => &x.loc,
 			Self::IfExpr(x) => &x.loc,
 			Self::Item(x) => x.loc(),
-			Self::Items(x) => &x.loc,
 			Self::Literal(x) => &x.loc,
 			Self::Program(x) => &x.loc,
 			Self::Stmt(x) => x.loc(),
@@ -89,6 +87,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("IF",    r"(^if)"),
 		("IMP",   r"(^import)"),
 		("MUT",   r"(^mut)"),
+		("PUB",   r"(^pub)"),
 		("VAR",   r"(^var)"),
 
 		// Operators
@@ -142,7 +141,6 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&ITEM_PATTERNS).unwrap();
-	parser_builder.add_patterns(&ITEMS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&LITERAL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&STMT_PATTERNS).unwrap();

@@ -7,6 +7,7 @@ use super::Stmts;
 
 #[derive(Debug, Clone)]
 pub struct Func {
+	pub public: bool,
 	pub id: String,
 	pub stmts: Stmts,
 	pub loc: Loc
@@ -31,7 +32,7 @@ fn func(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::Func(Func { id, stmts, loc }))
+	Ok(Node::Func(Func { public: false, id, stmts, loc }))
 }
 
 fn func_err(nodes: &[Node]) -> Result<Node, Feedback> {
