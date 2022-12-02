@@ -4,7 +4,7 @@ use bird_utils::*;
 
 use crate::Node;
 
-use super::{Expr, Type};
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct VarDecl {
