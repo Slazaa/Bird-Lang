@@ -8,7 +8,7 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct ConstDecl {
-	pub public: bool,
+	pub public: Option<bool>,
 	pub id: String,
 	pub val: Expr,
 	pub loc: Loc
@@ -32,5 +32,5 @@ fn const_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::ConstDecl(ConstDecl { public: false, id, val, loc }))
+	Ok(Node::ConstDecl(ConstDecl { public: None, id, val, loc }))
 }

@@ -8,7 +8,7 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub struct VarDecl {
-	pub public: bool,
+	pub public: Option<bool>,
 	pub id: String,
 	pub val: Option<Expr>,
 	pub loc: Loc
@@ -28,7 +28,7 @@ fn var_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::VarDecl(VarDecl { public: false, id, val: None, loc }))
+	Ok(Node::VarDecl(VarDecl { public: None, id, val: None, loc }))
 }
 
 fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
@@ -45,5 +45,5 @@ fn var_decl_expr(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].token().unwrap().loc.to_owned();
 	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
 
-	Ok(Node::VarDecl(VarDecl { public: false, id, val, loc }))
+	Ok(Node::VarDecl(VarDecl { public: None, id, val, loc }))
 }

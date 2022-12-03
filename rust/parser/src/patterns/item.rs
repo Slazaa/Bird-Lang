@@ -14,16 +14,16 @@ pub enum Item {
 }
 
 impl Item {
-	pub fn public(&self) -> bool {
+	pub fn public(&self) -> &Option<bool> {
 		match self {
-			Self::ConstDecl(x) => x.public,
-			Self::Func(x) => x.public,
-			Self::FuncProto(x) => x.public,
-			Self::VarDecl(x) => x.public
+			Self::ConstDecl(x) => &x.public,
+			Self::Func(x) => &x.public,
+			Self::FuncProto(x) => &x.public,
+			Self::VarDecl(x) => &x.public
 		}
 	}
 
-	pub fn public_mut(&mut self) -> &mut bool {
+	pub fn public_mut(&mut self) -> &mut Option<bool> {
 		match self {
 			Self::ConstDecl(x) => &mut x.public,
 			Self::Func(x) => &mut x.public,
