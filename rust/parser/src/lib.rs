@@ -14,6 +14,8 @@ pub enum Node {
 	ConstDecl(ConstDecl),
 	Expr(Expr),
 	ExternBlock(ExternBlock),
+	Field(Field),
+	Fields(Fields),
 	FuncCall(FuncCall),
 	FuncProto(FuncProto),
 	Func(Func),
@@ -38,6 +40,8 @@ impl Node {
 			Self::ConstDecl(x) => &x.loc,
 			Self::Expr(x) => x.loc(),
 			Self::ExternBlock(x) => &x.loc,
+			Self::Field(x) => &x.loc,
+			Self::Fields(x) => &x.loc,
 			Self::FuncCall(x) => &x.loc,
 			Self::FuncProto(x) => &x.loc,
 			Self::Func(x) => &x.loc,
@@ -110,6 +114,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 		// Misc
 		("COL",   r"(^:)"),
+		("COM",   r"(^,)"),
 		("LCBR",  r"(^\{)"),
 		("LPAR",  r"(^\()"),
 		("RCBR",  r"(^\})"),
@@ -136,6 +141,8 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&CONST_DECL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXTERN_BLOCK_PATTERNS).unwrap();
+	parser_builder.add_patterns(&FIELD_PATTERNS).unwrap();
+	parser_builder.add_patterns(&FIELDS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_CALL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();

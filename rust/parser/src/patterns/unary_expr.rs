@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Loc, ASTNode};
+use parse::*;
 use bird_utils::*;
 
 use crate::Node;
@@ -29,8 +29,8 @@ fn unary_op(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[1].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[1].loc().end.to_owned();
 
 	Ok(Node::UnaryExpr(UnaryExpr { op: op.symbol, val: val.to_owned(), loc }))
 }

@@ -1,4 +1,4 @@
-use parse::{PatternFunc, Loc, ASTNode};
+use parse::*;
 use bird_utils::*;
 
 use crate::Node;
@@ -20,8 +20,8 @@ fn func_proto(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[2].loc().end.to_owned();
 
 	Ok(Node::FuncProto(FuncProto { public: None, id, loc }))
 }

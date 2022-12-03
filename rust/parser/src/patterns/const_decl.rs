@@ -1,5 +1,4 @@
-use parse::{PatternFunc, Loc, ASTNode};
-
+use parse::*;
 use bird_utils::*;
 
 use crate::Node;
@@ -29,8 +28,8 @@ fn const_decl(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[4].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[4].loc().end.to_owned();
 
 	Ok(Node::ConstDecl(ConstDecl { public: None, id, val, loc }))
 }

@@ -1,9 +1,9 @@
-use parse::{PatternFunc, Loc};
+use parse::*;
 use bird_utils::*;
 
 use crate::Node;
 
-use super::Stmt;
+use super::*;
 
 #[derive(Debug, Clone)]
 pub struct Stmts {
@@ -33,7 +33,7 @@ fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
 
 	let stmts = match nodes.get(1) {
 		Some(Node::Stmts(x)) => x.stmts.clone(),
-		_ => Vec::new()
+		_ => vec![]
 	};
 
 	let mut stmts_vec = vec![stmt.to_owned()];
@@ -46,5 +46,5 @@ fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
 		stmts.last().unwrap().loc().end.to_owned()
 	};
 
-	Ok(Node::Stmts(Stmts { stmts: stmts_vec, loc: loc.to_owned() }))
+	Ok(Node::Stmts(Stmts { stmts: stmts_vec, loc }))
 }

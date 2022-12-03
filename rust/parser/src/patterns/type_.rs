@@ -1,5 +1,4 @@
-use parse::{PatternFunc, Loc, ASTNode};
-
+use parse::*;
 use bird_utils::*;
 
 use crate::Node;
@@ -30,8 +29,8 @@ pub fn type_(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[0].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[0].loc().end.to_owned();
 
 	Ok(Node::Type(Type { id, ptr_kind: PtrKind::None, loc }))
 }
@@ -42,8 +41,8 @@ pub fn type_ptr(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[1].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[1].loc().end.to_owned();
 
 	Ok(Node::Type(Type { id, ptr_kind: PtrKind::Const, loc }))
 }
@@ -54,8 +53,8 @@ pub fn type_ptr_mut(nodes: &[Node]) -> Result<Node, Feedback> {
 		_ => panic!("If you see this, that means the dev does bad work")
 	};
 
-	let mut loc = nodes[0].token().unwrap().loc.to_owned();
-	loc.end = nodes[2].token().unwrap().loc.end.to_owned();
+	let mut loc = nodes[0].loc().to_owned();
+	loc.end = nodes[2].loc().end.to_owned();
 
 	Ok(Node::Type(Type { id, ptr_kind: PtrKind::Mut, loc }))
 }
