@@ -12,7 +12,7 @@ pub struct Program {
 }
 
 pub static PROGRAM_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
-	("program", "stmts", program)
+	("program", "program_stmts", program)
 ];
 
 fn program(nodes: &[Node]) -> Result<Node, Feedback> {

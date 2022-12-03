@@ -11,10 +11,14 @@ pub struct Stmts {
 	pub loc: Loc
 }
 
-pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 3] = [
+pub static STMTS_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
 	("stmts", "stmt stmts", stmts),
 	("stmts", "stmt", stmts),
 	("stmts", "", stmts),
+
+	("program_stmts", "program_stmt program_stmts", stmts),
+	("program_stmts", "program_stmt", stmts),
+	("program_stmts", "", stmts)
 ];
 
 fn stmts(nodes: &[Node]) -> Result<Node, Feedback> {
