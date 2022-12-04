@@ -12,7 +12,13 @@ impl Transpiler {
 	}
 
 	fn eval_const_decl(&mut self, const_decl: &ConstDecl) -> Result<String, Feedback> {
-		Ok(format!("{} const {};\n", type_infer(&const_decl.val)?, const_decl.id))
+		if let Some(public) = const_decl.public {
+			if !public {
+				return Ok("".to_owned())
+			}
+		}
+
+		Ok(format!("extern {} const {};\n", type_infer(&const_decl.val)?, const_decl.id))
 	}
 
 	fn eval_extern_block(&mut self, extern_block: &ExternBlock) -> Result<String, Feedback> {
@@ -23,15 +29,37 @@ impl Transpiler {
 		}
 	}
 
-	fn eval_func(&mut self, func: &Func) -> Result<String, Feedback> {
-		if func.public {
-			Ok(format!("void {}(void);\n", func.id.to_owned()))
-		} else {
-			Ok("".to_owned())
+	fn eval_field(&mut self, field: &Field) -> Result<String, Feedback> {
+		Ok(format!("\t{} {};\n", self.eval_type(&field.type_)?, field.id))
+	}
+
+	fn eval_fields(&mut self, fields: &Fields) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for field in &fields.fields {
+			res.push_str(&self.eval_field(field)?)
 		}
+
+		Ok(res)
+	}
+
+	fn eval_func(&mut self, func: &Func) -> Result<String, Feedback> {
+		if let Some(public) = func.public {
+			if !public {
+				return Ok("".to_owned())
+			}
+		}
+
+		Ok(format!("void {}(void);\n", func.id.to_owned()))
 	}
 
 	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
+		if let Some(public) = func_proto.public {
+			if !public {
+				return Ok("".to_owned())
+			}
+		}
+
 		Ok(format!("void {}(void);\n", func_proto.id))
 	}
 
@@ -46,6 +74,7 @@ impl Transpiler {
 				self.eval_func(x)
 			},
 			Item::FuncProto(x) => self.eval_func_proto(x),
+			Item::Struct(x) => self.eval_struct(x),
 			Item::VarDecl(x) => self.eval_var_decl(x)
 		}
 	}
@@ -71,6 +100,14 @@ impl Transpiler {
 		Ok(res)
 	}
 
+	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
+		Ok(format!("\
+typedef struct {{
+{}\
+}} {};\n\
+		", self.eval_fields(&struct_.fields)?, struct_.id))
+	}
+
 	fn eval_type(&mut self, type_: &Type) -> Result<String, Feedback> {
 		match type_.ptr_kind {
 			PtrKind::None => Ok(format!("{}", type_.id)),
@@ -82,7 +119,7 @@ impl Transpiler {
 	fn eval_var_decl(&mut self, var_decl: &VarDecl) -> Result<String, Feedback> {
 		Ok(match &var_decl.val {
 			Some(val) => format!("extern {} {}", type_infer(val)?, var_decl.id),
-			None => format!("extern void {}", var_decl.id)
+			None => format!("extern void {};", var_decl.id)
 		})
 	}
 }

@@ -7,8 +7,8 @@ use super::c_header;
 use super::utils::*;
 
 pub static UTILS: &str = "\
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef __UTILS_H__
+#define __UTILS_H__
 
 typedef enum {
 	false,
@@ -19,6 +19,8 @@ typedef char i8;
 typedef short i16;
 typedef long i32;
 typedef long long i64;
+
+typedef unsigned int uint;
 
 typedef usigned char u8;
 typedef usigned short u16;
@@ -54,7 +56,16 @@ impl Transpiler {
 	}
 
 	fn eval_const_decl(&mut self, const_decl: &ConstDecl, scope_depth: usize) -> Result<String, Feedback> {
-		Ok(format!("{} const {} = {}", type_infer(&const_decl.val)?, const_decl.id, self.eval_expr(&const_decl.val, scope_depth)?))
+		let static_str = match const_decl.public {
+			Some(public) => if !public {
+				"static "
+			} else {
+				""
+			},
+			None => ""
+		};
+
+		Ok(format!("{}{} const {} = {}", static_str, type_infer(&const_decl.val)?, const_decl.id, self.eval_expr(&const_decl.val, scope_depth)?))
 	}
 
 	fn eval_expr(&mut self, expr: &Expr, scope_depth: usize) -> Result<String, Feedback> {
@@ -101,19 +112,21 @@ impl Transpiler {
 			stmts = "\n".to_owned();
 		}
 
-		if func.public {
-			Ok(format!("\n\
-void {}(void) {{
+		let static_str = match func.public {
+			Some(public) => if !public {
+				"static "
+			} else {
+				""
+			},
+			None => ""
+		};
+
+		Ok(format!("\n\
+{}void {}(void) {{
 {}\
 }}\n\
-			", id, stmts))
-		} else {
-			Ok(format!("\n\
-static void {}(void) {{
-{}\
-}}\n\
-			", id, stmts))
-		}
+			", static_str, id, stmts)
+		)
 	}
 
 	fn eval_id(&mut self, id: &Token) -> Result<String, Feedback> {
@@ -145,7 +158,8 @@ static void {}(void) {{
 			Item::ConstDecl(x) => self.eval_const_decl(x, scope_depth),
 			Item::Func(x) => self.eval_func(x, scope_depth),
 			Item::FuncProto(x) => self.eval_func_proto(x),
-			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth)
+			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth),
+			_ => Ok("".to_owned())
 		}
 	}
 	
@@ -175,7 +189,8 @@ static void {}(void) {{
 				let item = self.eval_item(x, scope_depth)?;
 
 				let item = match x {
-					Item::Func(_) => item,
+					Item::Func(_) |
+					Item::Struct(_) => item,
 					_ => scope_tabs + &item + ";\n"
 				};
 
@@ -207,9 +222,18 @@ static void {}(void) {{
 	}
 
 	fn eval_var_decl(&mut self, var_decl: &VarDecl, scope_depth: usize) -> Result<String, Feedback> {
+		let static_str = match var_decl.public {
+			Some(public) => if !public {
+				"static "
+			} else {
+				""
+			},
+			None => ""
+		};
+
 		Ok(match &var_decl.val {
-			Some(val) => format!("{} {} = {}", type_infer(val)?, var_decl.id, self.eval_expr(val, scope_depth)?),
-			None => format!("void {}", var_decl.id)
+			Some(val) => format!("{}{} {} = {}", static_str, type_infer(val)?, var_decl.id, self.eval_expr(val, scope_depth)?),
+			None => format!("{}void {}", static_str, var_decl.id)
 		})
 	}
 }
@@ -219,20 +243,25 @@ pub fn transpile(ast: &Node) -> Result<(String, String), Feedback> {
 
 	if let Node::Program(program) = ast {
 		let mut src = transpiler.eval_program(program)?;
+		let filename = rem_ext(program.loc.filename.as_ref().unwrap());
 
 		if transpiler.found_main() {
-			src.push_str("
-int main(int argc, char** argv) {
+			src = format!("\
+#include \"{}.h\"
+#include \"__utils__.h\"
+
+{}
+
+int main(int argc, char** argv) {{
 	main_();
 
 	return 0;
-}
-			");
+}}\
+			", filename, src);
 		} else {
-			let filename = rem_ext(program.loc.filename.as_ref().unwrap());
-
 			src = format!("\
 #include \"{}.h\"
+#include \"__utils__.h\"
 
 {}\
 			", filename, src);
