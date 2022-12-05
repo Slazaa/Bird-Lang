@@ -90,6 +90,20 @@ impl Transpiler {
 		}
 	}
 
+	fn eval_field(&mut self, field: &Field) -> Result<String, Feedback> {
+		Ok(format!("\t{} {};\n", self.eval_type(&field.type_)?, field.id))
+	}
+
+	fn eval_fields(&mut self, fields: &Fields) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for field in &fields.fields {
+			res.push_str(&self.eval_field(field)?)
+		}
+
+		Ok(res)
+	}
+
 	fn eval_func_call(&mut self, func_call: &FuncCall) -> Result<String, Feedback> {
 		Ok(format!("{}()", func_call.id))
 	}
@@ -158,8 +172,8 @@ impl Transpiler {
 			Item::ConstDecl(x) => self.eval_const_decl(x, scope_depth),
 			Item::Func(x) => self.eval_func(x, scope_depth),
 			Item::FuncProto(x) => self.eval_func_proto(x),
-			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth),
-			_ => Ok("".to_owned())
+			Item::Struct(x) => self.eval_struct(x),
+			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth)
 		}
 	}
 	
@@ -208,6 +222,21 @@ impl Transpiler {
 
 		Ok(res)
 	}
+
+	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
+        match struct_.public {
+            Some(public) => if !public {
+	            Ok(format!("\
+typedef struct {{
+{}\
+}} {};\n\n\
+		        ", self.eval_fields(&struct_.fields)?, struct_.id))
+            } else {
+                Ok("".to_owned())
+            }
+            None => Ok("".to_owned())
+        }
+    }
 
 	fn eval_type(&mut self, type_: &Type) -> Result<String, Feedback> {
 		match type_.ptr_kind {

@@ -101,11 +101,18 @@ impl Transpiler {
 	}
 
 	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
-		Ok(format!("\
+        match struct_.public {
+            Some(public) => if public {
+	            Ok(format!("\
 typedef struct {{
 {}\
-}} {};\n\
-		", self.eval_fields(&struct_.fields)?, struct_.id))
+}} {};\n\n\
+		        ", self.eval_fields(&struct_.fields)?, struct_.id))
+            } else {
+                Ok("".to_owned())
+            }
+            None => Ok("".to_owned())
+        }
 	}
 
 	fn eval_type(&mut self, type_: &Type) -> Result<String, Feedback> {
