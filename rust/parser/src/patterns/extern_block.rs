@@ -13,7 +13,7 @@ pub struct ExternBlock {
 }
 
 pub static EXTERN_BLOCK_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
-	("extern_block", "EXT STR LCBR stmts RCBR", extern_block)
+	("extern_block", "EXT STR LCBR program_stmts RCBR", extern_block)
 ];
 
 fn extern_block(nodes: &[Node]) -> Result<Node, Feedback> {

@@ -3,11 +3,12 @@ use bird_utils::*;
 
 use crate::Node;
 
-use super::{Expr, Item};
+use super::*;
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
 	Expr(Expr),
+	ExternBlock(ExternBlock),
 	Item(Item)
 }
 
@@ -15,14 +16,16 @@ impl Stmt {
 	pub fn loc(&self) -> &Loc {
 		match self {
 			Self::Expr(x) => x.loc(),
-			Self::Item(x) => x.loc()
+			Self::ExternBlock(x) => &x.loc,
+			Self::Item(x) => x.loc(),
 		}
 	}
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
-	("stmt", "item", stmt),
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
 	("stmt", "expr SEMI", stmt),
+	("stmt", "extern_block", stmt),
+	("stmt", "item", stmt),
 
 	("program_stmt", "PUB item", pub_item),
 	("program_stmt", "item", priv_item),
@@ -32,6 +35,7 @@ pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
 fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(Node::Stmt(match &nodes[0] {
 		Node::Expr(x) => Stmt::Expr(x.to_owned()),
+		Node::ExternBlock(x) => Stmt::ExternBlock(x.to_owned()),
 		Node::Item(x) => Stmt::Item(x.to_owned()),
 		_ => panic!("If you see this, that means the dev does bad work")
 	}))

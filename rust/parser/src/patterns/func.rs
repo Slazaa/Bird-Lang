@@ -14,9 +14,8 @@ pub struct Func {
 	pub loc: Loc
 }
 
-pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
-	("func", "FUNC ID LCBR stmts RCBR", func),
-	("func", "FUNC", func_err)
+pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
+	("func", "FUNC ID LCBR stmts RCBR", func)
 ];
 
 fn func(nodes: &[Node]) -> Result<Node, Feedback> {
@@ -34,13 +33,4 @@ fn func(nodes: &[Node]) -> Result<Node, Feedback> {
 	loc.end = nodes[4].loc().end.to_owned();
 
 	Ok(Node::Func(Func { public: None, params: None, id, stmts, loc }))
-}
-
-fn func_err(nodes: &[Node]) -> Result<Node, Feedback> {
-	let (loc, found) = match nodes.get(1) {
-		Some(x) => (x.loc(), Some(x.token().unwrap().symbol.as_str())),
-		None => (nodes[0].loc(), None)
-	};
-
-	Err(Error::expected(loc, "'{'", found))
 }
