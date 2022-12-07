@@ -22,10 +22,13 @@ typedef long long i64;
 
 typedef unsigned int uint;
 
-typedef usigned char u8;
-typedef usigned short u16;
-typedef usigned long u32;
-typedef usigned long long u64;
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned long u32;
+typedef unsigned long long u64;
+
+typedef float f32;
+typedef double f64;
 
 typedef u32 char_;
 
@@ -72,7 +75,6 @@ impl Transpiler {
 		match expr {
 			Expr::AssignExpr(x) => self.eval_assign_expr(x, scope_depth),
 			Expr::BinExpr(x) => self.eval_bin_expr(x, scope_depth),
-			Expr::ExternBlock(x) => self.eval_extern_block(x, scope_depth),
 			Expr::FuncCall(x) => self.eval_func_call(x),
 			Expr::IfExpr(x) => self.eval_if_stmt(x, scope_depth),
 			Expr::UnaryExpr(x) => self.eval_unary_expr(x, scope_depth),
@@ -109,7 +111,7 @@ impl Transpiler {
 	}
 
 	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
-		Ok(format!("void {}(void)\n", func_proto.id))
+		Ok(format!("void {}(void)", func_proto.id))
 	}
 
 	fn eval_func(&mut self, func: &Func, scope_depth: usize) -> Result<String, Feedback> {
@@ -188,7 +190,7 @@ impl Transpiler {
 	fn eval_stmt(&mut self, stmt: &Stmt, scope_depth: usize) -> Result<String, Feedback> {
 		let scope_tabs = "\t".repeat(scope_depth);
 
-		Ok(match stmt {
+		match stmt {
 			Stmt::Expr(x) => {
 				let expr = self.eval_expr(x, scope_depth)?;
 
@@ -197,8 +199,9 @@ impl Transpiler {
 					_ => scope_tabs + &expr + ";\n"
 				};
 
-				expr
+				Ok(expr)
 			}
+			Stmt::ExternBlock(x) => self.eval_extern_block(x, scope_depth),
 			Stmt::Item(x) => {
 				let item = self.eval_item(x, scope_depth)?;
 
@@ -208,9 +211,9 @@ impl Transpiler {
 					_ => scope_tabs + &item + ";\n"
 				};
 
-				item
+				Ok(item)
 			}
-		})
+		}
 	}
 
 	fn eval_stmts(&mut self, stmts: &Stmts, scope_depth: usize) -> Result<String, Feedback> {
@@ -229,7 +232,7 @@ impl Transpiler {
 	            Ok(format!("\
 typedef struct {{
 {}\
-}} {};\n\n\
+}} {};\n\
 		        ", self.eval_fields(&struct_.fields)?, struct_.id))
             } else {
                 Ok("".to_owned())
