@@ -13,7 +13,6 @@ pub enum Node {
 	BinExpr(BinExpr),
 	ConstDecl(ConstDecl),
 	Expr(Expr),
-	ExternBlock(ExternBlock),
 	Field(Field),
 	Fields(Fields),
 	FuncCall(FuncCall),
@@ -40,7 +39,6 @@ impl Node {
 			Self::BinExpr(x) => &x.loc,
 			Self::ConstDecl(x) => &x.loc,
 			Self::Expr(x) => x.loc(),
-			Self::ExternBlock(x) => &x.loc,
 			Self::Field(x) => &x.loc,
 			Self::Fields(x) => &x.loc,
 			Self::FuncCall(x) => &x.loc,
@@ -89,7 +87,6 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		// Keywords
 		("CONST", r"(^const)"),
 		("FUNC",  r"(^func)"),
-		("EXT",   r"(^extern)"),
 		("IF",    r"(^if)"),
 		("IMP",   r"(^import)"),
 		("MUT",   r"(^mut)"),
@@ -143,7 +140,6 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&BIN_OP_PATTERNS).unwrap();
 	parser_builder.add_patterns(&CONST_DECL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&EXPR_PATTERNS).unwrap();
-	parser_builder.add_patterns(&EXTERN_BLOCK_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FIELD_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FIELDS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_CALL_PATTERNS).unwrap();
