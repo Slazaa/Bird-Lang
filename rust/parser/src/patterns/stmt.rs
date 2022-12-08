@@ -20,7 +20,8 @@ impl Stmt {
 	}
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
+	("stmt", "if_expr", stmt),
 	("stmt", "expr SEMI", stmt),
 	("stmt", "item", stmt),
 
@@ -31,6 +32,7 @@ pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 5] = [
 
 fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {
 	Ok(Node::Stmt(match &nodes[0] {
+		Node::IfExpr(x) => Stmt::Expr(Expr::IfExpr(Box::new(x.to_owned()))),
 		Node::Expr(x) => Stmt::Expr(x.to_owned()),
 		Node::Item(x) => Stmt::Item(x.to_owned()),
 		_ => panic!("If you see this, that means the dev does bad work")
