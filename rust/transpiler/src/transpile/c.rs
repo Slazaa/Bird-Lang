@@ -84,14 +84,6 @@ impl Transpiler {
 		}
 	}
 
-	fn eval_extern_block(&mut self, extern_block: &ExternBlock, scope_depth: usize) -> Result<String, Feedback> {
-		if extern_block.lang == "\"C\"" {
-			self.eval_stmts(&extern_block.stmts, scope_depth)
-		} else {
-			Err(Error::unspecified("Extern blocks only support the C language"))
-		}
-	}
-
 	fn eval_field(&mut self, field: &Field) -> Result<String, Feedback> {
 		Ok(format!("\t{} {};\n", self.eval_type(&field.type_)?, field.id))
 	}
@@ -201,7 +193,6 @@ impl Transpiler {
 
 				Ok(expr)
 			}
-			Stmt::ExternBlock(x) => self.eval_extern_block(x, scope_depth),
 			Stmt::Item(x) => {
 				let item = self.eval_item(x, scope_depth)?;
 
@@ -284,7 +275,7 @@ pub fn transpile(ast: &Node) -> Result<(String, String), Feedback> {
 
 {}
 
-int main(int argc, char** argv) {{
+int main(int argc, char* argv[]) {{
 	main_();
 
 	return 0;

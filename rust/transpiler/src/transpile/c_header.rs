@@ -21,14 +21,6 @@ impl Transpiler {
 		Ok(format!("extern {} const {};\n", type_infer(&const_decl.val)?, const_decl.id))
 	}
 
-	fn eval_extern_block(&mut self, extern_block: &ExternBlock) -> Result<String, Feedback> {
-		if extern_block.lang == "\"C\"" {
-			self.eval_stmts(&extern_block.stmts)
-		} else {
-			Err(Error::unspecified("Extern blocks only support the C language"))
-		}
-	}
-
 	fn eval_field(&mut self, field: &Field) -> Result<String, Feedback> {
 		Ok(format!("\t{} {};\n", self.eval_type(&field.type_)?, field.id))
 	}
