@@ -12,10 +12,8 @@ impl Transpiler {
 	}
 
 	fn eval_const_decl(&mut self, const_decl: &ConstDecl) -> Result<String, Feedback> {
-		if let Some(public) = const_decl.public {
-			if !public {
-				return Ok("".to_owned())
-			}
+		if !const_decl.public.unwrap() {
+			return Ok("".to_owned())
 		}
 
 		Ok(format!("extern {} const {};\n", type_infer(&const_decl.val)?, const_decl.id))
@@ -36,23 +34,28 @@ impl Transpiler {
 	}
 
 	fn eval_func(&mut self, func: &Func) -> Result<String, Feedback> {
-		if let Some(public) = func.public {
-			if !public {
-				return Ok("".to_owned())
-			}
+		if !func.public.unwrap() {
+			return Ok("".to_owned())
 		}
 
 		Ok(format!("void {}(void);\n", func.id.to_owned()))
 	}
 
 	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
-		if let Some(public) = func_proto.public {
-			if !public {
-				return Ok("".to_owned())
-			}
+		if !func_proto.public.unwrap() {
+			return Ok("".to_owned())
 		}
 
 		Ok(format!("void {}(void);\n", func_proto.id))
+	}
+
+	fn eval_import(&mut self, import: &Import) -> Result<String, Feedback> {
+		if import.public.unwrap() {
+			let path = rem_ext(&import.path) + ".h";
+			Ok(format!("#include {}\"\n", path))
+		} else {
+			Ok("".to_owned())
+		}
 	}
 
 	fn eval_item(&mut self, item: &Item) -> Result<String, Feedback> {
@@ -66,6 +69,7 @@ impl Transpiler {
 				self.eval_func(x)
 			},
 			Item::FuncProto(x) => self.eval_func_proto(x),
+			Item::Import(x) => self.eval_import(x),
 			Item::Struct(x) => self.eval_struct(x),
 			Item::VarDecl(x) => self.eval_var_decl(x)
 		}
@@ -93,18 +97,15 @@ impl Transpiler {
 	}
 
 	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
-        match struct_.public {
-            Some(public) => if public {
-	            Ok(format!("\
+		if struct_.public.unwrap() {
+			Ok(format!("\
 typedef struct {{
 {}\
 }} {};\n\n\
-		        ", self.eval_fields(&struct_.fields)?, struct_.id))
-            } else {
-                Ok("".to_owned())
-            }
-            None => Ok("".to_owned())
-        }
+			", self.eval_fields(&struct_.fields)?, struct_.id))
+		} else {
+			Ok("".to_owned())
+		}
 	}
 
 	fn eval_type(&mut self, type_: &Type) -> Result<String, Feedback> {

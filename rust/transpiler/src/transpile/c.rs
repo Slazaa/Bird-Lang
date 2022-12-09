@@ -120,13 +120,10 @@ impl Transpiler {
 			stmts = "\n".to_owned();
 		}
 
-		let static_str = match func.public {
-			Some(public) => if !public {
-				"static "
-			} else {
-				""
-			},
-			None => ""
+		let static_str = if !func.public.unwrap() {
+			"static "
+		} else {
+			""
 		};
 
 		Ok(format!("\n\
@@ -140,11 +137,7 @@ impl Transpiler {
 	fn eval_id(&mut self, id: &Token) -> Result<String, Feedback> {
 		Ok(format!("{}", id.symbol))
 	}
-/*
-	fn eval_if_expr(&mut self, if_stmt: &IfExpr, scope_depth: usize) -> Result<String, Feedback> {
-		todo!();
-	}
-*/
+	
 	fn eval_if_stmt(&mut self, if_stmt: &IfExpr, scope_depth: usize) -> Result<String, Feedback> {
 		let scope_tabs = "\t".repeat(scope_depth);
 
@@ -161,11 +154,21 @@ impl Transpiler {
 		", self.eval_expr(&if_stmt.cond, scope_depth)?, stmts))
 	}
 
+	fn eval_import(&mut self, import: &Import) -> Result<String, Feedback> {
+		if import.public.unwrap() {
+			Ok("".to_owned())
+		} else {
+			let path = rem_ext(&import.path) + ".h";
+			Ok(format!("#include {}\"\n", path))
+		}
+	}
+
 	fn eval_item(&mut self, item: &Item, scope_depth: usize) -> Result<String, Feedback> {
 		match item {
 			Item::ConstDecl(x) => self.eval_const_decl(x, scope_depth),
 			Item::Func(x) => self.eval_func(x, scope_depth),
 			Item::FuncProto(x) => self.eval_func_proto(x),
+			Item::Import(x) => self.eval_import(x),
 			Item::Struct(x) => self.eval_struct(x),
 			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth)
 		}
@@ -197,7 +200,8 @@ impl Transpiler {
 				let item = self.eval_item(x, scope_depth)?;
 
 				let item = match x {
-					Item::Func(_) |
+					Item::Func(_)   |
+					Item::Import(_) |
 					Item::Struct(_) => item,
 					_ => scope_tabs + &item + ";\n"
 				};
@@ -218,19 +222,16 @@ impl Transpiler {
 	}
 
 	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
-        match struct_.public {
-            Some(public) => if !public {
-	            Ok(format!("\
+		if struct_.public.unwrap() {
+			Ok(format!("\
 typedef struct {{
 {}\
 }} {};\n\
-		        ", self.eval_fields(&struct_.fields)?, struct_.id))
-            } else {
-                Ok("".to_owned())
-            }
-            None => Ok("".to_owned())
-        }
-    }
+			", self.eval_fields(&struct_.fields)?, struct_.id))
+		} else {
+			Ok("".to_owned())
+		}
+	}
 
 	fn eval_type(&mut self, type_: &Type) -> Result<String, Feedback> {
 		match type_.ptr_kind {
