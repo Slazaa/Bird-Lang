@@ -11,7 +11,7 @@ pub struct Import {
 }
 
 pub static IMPORT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
-	("import", "IMP STR SEMI", import)
+	("import", "IMPORT STR SEMI", import)
 ];
 
 pub fn import(nodes: &[Node]) -> Result<Node, Feedback> {

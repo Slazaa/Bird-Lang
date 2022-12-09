@@ -87,41 +87,41 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 	lexer_builder.add_rules(&[
 		// Keywords
-		("CONST", r"(^const)"),
-		("FUNC",  r"(^func)"),
-		("IF",    r"(^if)"),
-		("IMP",   r"(^import)"),
-		("MUT",   r"(^mut)"),
-		("PUB",   r"(^pub)"),
-		("STRCT", r"(^struct)"),
-		("VAR",   r"(^var)"),
+		("CONST",  r"(^const)"),
+		("FUNC",   r"(^func)"),
+		("IF",     r"(^if)"),
+		("IMPORT", r"(^import)"),
+		("MUT",    r"(^mut)"),
+		("PUB",    r"(^pub)"),
+		("STRCT",  r"(^struct)"),
+		("VAR",    r"(^var)"),
 
 		// Operators
-		("PLUS",  r"(^\+)"),
-		("MINUS", r"(^-)"),
-		("MULT",  r"(^\*)"),
-		("DIV",   r"(^/)"),
+		("PLUS",   r"(^\+)"),
+		("MINUS",  r"(^-)"),
+		("MULT",   r"(^\*)"),
+		("DIV",    r"(^/)"),
 
-		("AMP",   r"(^&)"),
+		("AMP",    r"(^&)"),
 
-		("EQ",    r"(^=)"),
+		("EQ",     r"(^=)"),
 
 		// Identifier / Literal
-		("BOOL",  r"(^(false|true))"),
-		("ID",    r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
-		("FLT",   r"(^\d+\.\d+)"),
-		("INT",   r"(^\d+)"),
-		("CHR",   r"(^'.')"),
-		("STR",   r#"(^".*")"#),
+		("BOOL",   r"(^(false|true))"),
+		("ID",     r"(^[a-zA-Z_][a-zA-Z0-9_]*)"),
+		("FLT",    r"(^\d+\.\d+)"),
+		("INT",    r"(^\d+)"),
+		("CHR",    r"(^'.')"),
+		("STR",    r#"(^".*")"#),
 
 		// Misc
-		("COL",   r"(^:)"),
-		("COM",   r"(^,)"),
-		("LCBR",  r"(^\{)"),
-		("LPAR",  r"(^\()"),
-		("RCBR",  r"(^\})"),
-		("RPAR",  r"(^\))"),
-		("SEMI",  r"(^;)")
+		("COL",    r"(^:)"),
+		("COM",    r"(^,)"),
+		("LCBR",   r"(^\{)"),
+		("LPAR",   r"(^\()"),
+		("RCBR",   r"(^\})"),
+		("RPAR",   r"(^\))"),
+		("SEMI",   r"(^;)")
 	]).unwrap();
 
 	let lexer = lexer_builder.build();
