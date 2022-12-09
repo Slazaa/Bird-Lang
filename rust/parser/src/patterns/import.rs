@@ -5,6 +5,7 @@ use crate::Node;
 
 #[derive(Debug, Clone)]
 pub struct Import {
+	pub public: Option<bool>,
 	pub path: String,
 	pub loc: Loc
 }
@@ -22,5 +23,5 @@ pub fn import(nodes: &[Node]) -> Result<Node, Feedback> {
 	let mut loc = nodes[0].loc().to_owned();
 	loc.end = nodes[2].loc().end.to_owned();
 
-	Ok(Node::Import(Import { path, loc }))
+	Ok(Node::Import(Import { public: None, path, loc }))
 }
