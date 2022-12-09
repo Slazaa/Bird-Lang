@@ -19,6 +19,7 @@ pub enum Node {
 	FuncProto(FuncProto),
 	Func(Func),
 	IfExpr(IfExpr),
+	Import(Import),
 	Item(Item),
 	Literal(Literal),
 	Program(Program),
@@ -45,6 +46,7 @@ impl Node {
 			Self::FuncProto(x) => &x.loc,
 			Self::Func(x) => &x.loc,
 			Self::IfExpr(x) => &x.loc,
+			Self::Import(x) => &x.loc,
 			Self::Item(x) => x.loc(),
 			Self::Literal(x) => &x.loc,
 			Self::Program(x) => &x.loc,
@@ -146,6 +148,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
+	parser_builder.add_patterns(&IMPORT_PATTERNS).unwrap();
 	parser_builder.add_patterns(&ITEM_PATTERNS).unwrap();
 	parser_builder.add_patterns(&LITERAL_PATTERNS).unwrap();
 	parser_builder.add_patterns(&PROGRAM_PATTERNS).unwrap();
