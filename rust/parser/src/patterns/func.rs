@@ -14,7 +14,7 @@ pub struct Func {
 	pub loc: Loc
 }
 
-pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 1] = [
+pub static FUNC_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 2] = [
 	("func", "FUNC ID LCBR stmts RCBR", func),
 	("func", "FUNC ID LPAR fields RPAR LCBR stmts RCBR", func_params)
 ];

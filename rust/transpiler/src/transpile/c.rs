@@ -102,6 +102,22 @@ impl Transpiler {
 		Ok(format!("{}()", func_call.id))
 	}
 
+	fn eval_decl_param(&mut self, param: &Field) -> Result<String, Feedback> {
+		Ok(format!("{} {}", param.type_, param.id))
+	}
+
+	fn eval_decl_params(&mut self, params: &Fields) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for param in &params.fields {
+			res.push_str(&self.eval_decl_param(param)?) + ", "
+		}
+
+		res.drain(res.len() - 2..);
+
+		Ok(res)
+	}
+
 	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
 		Ok(format!("void {}(void)", func_proto.id))
 	}
@@ -112,6 +128,11 @@ impl Transpiler {
 			"main_".to_owned()
 		} else {
 			func.id.to_owned()
+		};
+
+		let params = match &func.params {
+			Some(x) => self.eval_decl_params(params)?,
+			None => "void".to_owned()
 		};
 
 		let mut stmts = self.eval_stmts(&func.stmts, scope_depth + 1)?;
