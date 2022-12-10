@@ -7,6 +7,8 @@ use super::*;
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
+	Import(Import),
+
 	Expr(Expr),
 	Item(Item)
 }
@@ -14,18 +16,21 @@ pub enum Stmt {
 impl Stmt {
 	pub fn loc(&self) -> &Loc {
 		match self {
+			Self::Import(x) => &x.loc,
+
 			Self::Expr(x) => x.loc(),
 			Self::Item(x) => x.loc(),
 		}
 	}
 }
 
-pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 6] = [
+pub static STMT_PATTERNS: [(&str, &str, PatternFunc<Node, Feedback>); 7] = [
 	("stmt", "if_expr", stmt),
 
 	("stmt", "expr SEMI", stmt),
 	("stmt", "item", stmt),
 
+	("program_stmt", "import", import_stmt),
 	("program_stmt", "PUB item", pub_item),
 	("program_stmt", "item", priv_item),
 	("program_stmt", "stmt", program_stmt)
@@ -37,6 +42,13 @@ fn stmt(nodes: &[Node]) -> Result<Node, Feedback> {
 
 		Node::Expr(x) => Stmt::Expr(x.to_owned()),
 		Node::Item(x) => Stmt::Item(x.to_owned()),
+		_ => panic!("If you see this, that means the dev does bad work")
+	}))
+}
+
+fn import_stmt(nodes: &[Node]) -> Result<Node, Feedback> {
+	Ok(Node::Stmt(match &nodes[0] {
+		Node::Import(x) => Stmt::Import(x.to_owned()),
 		_ => panic!("If you see this, that means the dev does bad work")
 	}))
 }
