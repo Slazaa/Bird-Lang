@@ -162,13 +162,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 			})
 		}
 	};
-
-	println!("Test!");
-
-	for token in &tokens {
-		println!("{:#?}", token);
-	}
-
+	
 	match parser.parse(&tokens) {
 		Ok(x) => Ok(x),
 		Err(e) => {
