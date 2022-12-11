@@ -16,7 +16,6 @@ pub enum Node {
 	Field(Field),
 	Fields(Fields),
 	FuncCall(FuncCall),
-	FuncProto(FuncProto),
 	Func(Func),
 	IfExpr(IfExpr),
 	Import(Import),
@@ -43,7 +42,6 @@ impl Node {
 			Self::Field(x) => &x.loc,
 			Self::Fields(x) => &x.loc,
 			Self::FuncCall(x) => &x.loc,
-			Self::FuncProto(x) => &x.loc,
 			Self::Func(x) => &x.loc,
 			Self::IfExpr(x) => &x.loc,
 			Self::Import(x) => &x.loc,
@@ -97,14 +95,16 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 		("VAR",    r"(^var)"),
 
 		// Operators
+		("SARR",   r"(^->)"),
+
 		("PLUS",   r"(^\+)"),
 		("MINUS",  r"(^-)"),
 		("MULT",   r"(^\*)"),
 		("DIV",    r"(^/)"),
 
-		("AMP",    r"(^&)"),
-
 		("EQ",     r"(^=)"),
+
+		("AMP",    r"(^&)"),
 
 		// Identifier / Literal
 		("BOOL",   r"(^(false|true))"),
@@ -125,17 +125,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	]).unwrap();
 
 	let lexer = lexer_builder.build();
-/*
-	for token in lexer.lex(&input) {
-		match token {
-			Ok(token) => println!("{:#?}", token),
-			Err(e) => {
-				println!("{:?}", e);
-				break;
-			}
-		}
-	}
-*/
+
 	let mut parser_builder = ParserBuilder::<Node, Feedback>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
 	parser_builder.add_patterns(&ASSIGN_PATTERNS).unwrap();
@@ -145,7 +135,6 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 	parser_builder.add_patterns(&FIELD_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FIELDS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_CALL_PATTERNS).unwrap();
-	parser_builder.add_patterns(&FUNC_PROTO_PATTERNS).unwrap();
 	parser_builder.add_patterns(&FUNC_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IF_EXPR_PATTERNS).unwrap();
 	parser_builder.add_patterns(&IMPORT_PATTERNS).unwrap();
@@ -173,6 +162,12 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 			})
 		}
 	};
+
+	println!("Test!");
+
+	for token in &tokens {
+		println!("{:#?}", token);
+	}
 
 	match parser.parse(&tokens) {
 		Ok(x) => Ok(x),
