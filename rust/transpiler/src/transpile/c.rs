@@ -50,6 +50,18 @@ impl Transpiler {
 		self.found_main
 	}
 
+	fn eval_args(&mut self, args: &Args, scope_depth: usize) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for arg in &args.args {
+			res.push_str(&(self.eval_expr(arg, scope_depth)? + ", "));
+		}
+
+		res.drain(res.len() - 2..);
+
+		Ok(res)
+	}
+
 	fn eval_assign_expr(&mut self, assign_expr: &AssignExpr, scope_depth: usize) -> Result<String, Feedback> {
 		Ok(format!("{} = {}", self.eval_expr(&assign_expr.left, scope_depth)?, self.eval_expr(&assign_expr.right, scope_depth)?))
 	}
@@ -71,11 +83,27 @@ impl Transpiler {
 		Ok(format!("{}{} const {} = {}", static_str, type_infer(&const_decl.val)?, const_decl.id, self.eval_expr(&const_decl.val, scope_depth)?))
 	}
 
+	fn eval_decl_param(&mut self, param: &Field) -> Result<String, Feedback> {
+		Ok(format!("{} {}", self.eval_type(&param.type_)?, param.id))
+	}
+
+	fn eval_decl_params(&mut self, params: &Fields) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for param in &params.fields {
+			res.push_str(&(self.eval_decl_param(param)? + ", "));
+		}
+
+		res.drain(res.len() - 2..);
+
+		Ok(res)
+	}
+
 	fn eval_expr(&mut self, expr: &Expr, scope_depth: usize) -> Result<String, Feedback> {
 		match expr {
 			Expr::AssignExpr(x) => self.eval_assign_expr(x, scope_depth),
 			Expr::BinExpr(x) => self.eval_bin_expr(x, scope_depth),
-			Expr::FuncCall(x) => self.eval_func_call(x),
+			Expr::FuncCall(x) => self.eval_func_call(x, scope_depth),
 			Expr::IfExpr(x) => self.eval_if_stmt(x, scope_depth),
 			Expr::UnaryExpr(x) => self.eval_unary_expr(x, scope_depth),
 
@@ -98,40 +126,28 @@ impl Transpiler {
 		Ok(res)
 	}
 
-	fn eval_func_call(&mut self, func_call: &FuncCall) -> Result<String, Feedback> {
-		Ok(format!("{}()", func_call.id))
-	}
-
-	fn eval_decl_param(&mut self, param: &Field) -> Result<String, Feedback> {
-		Ok(format!("{} {}", param.type_, param.id))
-	}
-
-	fn eval_decl_params(&mut self, params: &Fields) -> Result<String, Feedback> {
-		let mut res = String::new();
-
-		for param in &params.fields {
-			res.push_str(&self.eval_decl_param(param)?) + ", "
+	fn eval_func_call(&mut self, func_call: &FuncCall, scope_depth: usize) -> Result<String, Feedback> {
+		match &func_call.args {
+			Some(args) => Ok(format!("{}({})", func_call.id, self.eval_args(args, scope_depth)?)),
+			None => Ok(format!("{}()", func_call.id))
 		}
-
-		res.drain(res.len() - 2..);
-
-		Ok(res)
-	}
-
-	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
-		Ok(format!("void {}(void)", func_proto.id))
 	}
 
 	fn eval_func(&mut self, func: &Func, scope_depth: usize) -> Result<String, Feedback> {
 		let id = if func.id == "main" {
 			self.found_main = true;
-			"main_".to_owned()
+			"__main__".to_owned()
 		} else {
 			func.id.to_owned()
 		};
 
 		let params = match &func.params {
-			Some(x) => self.eval_decl_params(params)?,
+			Some(params) => self.eval_decl_params(params)?,
+			None => "void".to_owned()
+		};
+
+		let ret_type = match &func.ret_type {
+			Some(ret_type) => self.eval_type(ret_type)?,
 			None => "void".to_owned()
 		};
 
@@ -148,10 +164,10 @@ impl Transpiler {
 		};
 
 		Ok(format!("\n\
-{}void {}(void) {{
+{}{} {}({}) {{
 {}\
 }}\n\
-			", static_str, id, stmts)
+			", static_str, ret_type, id, params, stmts)
 		)
 	}
 
@@ -175,21 +191,10 @@ impl Transpiler {
 		", self.eval_expr(&if_stmt.cond, scope_depth)?, stmts))
 	}
 
-	fn eval_import(&mut self, import: &Import) -> Result<String, Feedback> {
-		if import.public.unwrap() {
-			Ok("".to_owned())
-		} else {
-			let path = rem_ext(&import.path) + ".h";
-			Ok(format!("#include {}\"\n", path))
-		}
-	}
-
 	fn eval_item(&mut self, item: &Item, scope_depth: usize) -> Result<String, Feedback> {
 		match item {
 			Item::ConstDecl(x) => self.eval_const_decl(x, scope_depth),
 			Item::Func(x) => self.eval_func(x, scope_depth),
-			Item::FuncProto(x) => self.eval_func_proto(x),
-			Item::Import(x) => self.eval_import(x),
 			Item::Struct(x) => self.eval_struct(x),
 			Item::VarDecl(x) => self.eval_var_decl(x, scope_depth)
 		}
@@ -222,13 +227,13 @@ impl Transpiler {
 
 				let item = match x {
 					Item::Func(_)   |
-					Item::Import(_) |
 					Item::Struct(_) => item,
 					_ => scope_tabs + &item + ";\n"
 				};
 
 				Ok(item)
 			}
+			_ => Ok("".to_owned())
 		}
 	}
 
@@ -243,12 +248,12 @@ impl Transpiler {
 	}
 
 	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
-		if struct_.public.unwrap() {
+		if !struct_.public.unwrap() {
 			Ok(format!("\
-typedef struct {{
+typedef struct {} {{
 {}\
 }} {};\n\
-			", self.eval_fields(&struct_.fields)?, struct_.id))
+			", struct_.id, self.eval_fields(&struct_.fields)?, struct_.id))
 		} else {
 			Ok("".to_owned())
 		}
@@ -298,7 +303,7 @@ pub fn transpile(ast: &Node) -> Result<(String, String), Feedback> {
 {}
 
 int main(int argc, char* argv[]) {{
-	main_();
+	__main__();
 
 	return 0;
 }}\

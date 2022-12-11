@@ -19,6 +19,22 @@ impl Transpiler {
 		Ok(format!("extern {} const {};\n", type_infer(&const_decl.val)?, const_decl.id))
 	}
 
+	fn eval_decl_param(&mut self, param: &Field) -> Result<String, Feedback> {
+		Ok(format!("{} {}", self.eval_type(&param.type_)?, param.id))
+	}
+
+	fn eval_decl_params(&mut self, params: &Fields) -> Result<String, Feedback> {
+		let mut res = String::new();
+
+		for param in &params.fields {
+			res.push_str(&(self.eval_decl_param(param)? + ", "));
+		}
+
+		res.drain(res.len() - 2..);
+
+		Ok(res)
+	}
+
 	fn eval_field(&mut self, field: &Field) -> Result<String, Feedback> {
 		Ok(format!("\t{} {};\n", self.eval_type(&field.type_)?, field.id))
 	}
@@ -38,24 +54,22 @@ impl Transpiler {
 			return Ok("".to_owned())
 		}
 
-		Ok(format!("void {}(void);\n", func.id.to_owned()))
-	}
+		let params = match &func.params {
+			Some(params) => self.eval_decl_params(params)?,
+			None => "void".to_owned()
+		};
 
-	fn eval_func_proto(&mut self, func_proto: &FuncProto) -> Result<String, Feedback> {
-		if !func_proto.public.unwrap() {
-			return Ok("".to_owned())
-		}
+		let ret_type = match &func.ret_type {
+			Some(ret_type) => self.eval_type(ret_type)?,
+			None => "void".to_owned()
+		};
 
-		Ok(format!("void {}(void);\n", func_proto.id))
+		Ok(format!("{} {}({});\n", ret_type, func.id.to_owned(), params))
 	}
 
 	fn eval_import(&mut self, import: &Import) -> Result<String, Feedback> {
-		if import.public.unwrap() {
-			let path = rem_ext(&import.path) + ".h";
-			Ok(format!("#include {}\"\n", path))
-		} else {
-			Ok("".to_owned())
-		}
+		let path = rem_ext(&import.path) + ".h";
+		Ok(format!("#include {}\"\n", path))
 	}
 
 	fn eval_item(&mut self, item: &Item) -> Result<String, Feedback> {
@@ -68,8 +82,6 @@ impl Transpiler {
 
 				self.eval_func(x)
 			},
-			Item::FuncProto(x) => self.eval_func_proto(x),
-			Item::Import(x) => self.eval_import(x),
 			Item::Struct(x) => self.eval_struct(x),
 			Item::VarDecl(x) => self.eval_var_decl(x)
 		}
@@ -81,6 +93,7 @@ impl Transpiler {
 
 	fn eval_stmt(&mut self, stmt: &Stmt) -> Result<String, Feedback> {
 		match stmt {
+			Stmt::Import(x) => self.eval_import(x),
 			Stmt::Item(x) => self.eval_item(x),
 			_ => Ok("".to_owned())
 		}
@@ -99,10 +112,10 @@ impl Transpiler {
 	fn eval_struct(&mut self, struct_: &Struct) -> Result<String, Feedback> {
 		if struct_.public.unwrap() {
 			Ok(format!("\
-typedef struct {{
+typedef struct {} {{
 {}\
 }} {};\n\n\
-			", self.eval_fields(&struct_.fields)?, struct_.id))
+			", struct_.id, self.eval_fields(&struct_.fields)?, struct_.id))
 		} else {
 			Ok("".to_owned())
 		}
