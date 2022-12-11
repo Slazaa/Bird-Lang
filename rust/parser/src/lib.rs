@@ -9,6 +9,7 @@ use crate::patterns::*;
 pub enum Node {
 	Token(Token),
 	// ----------
+	Args(Args),
 	AssignExpr(AssignExpr),
 	BinExpr(BinExpr),
 	ConstDecl(ConstDecl),
@@ -35,6 +36,7 @@ impl Node {
 		match self {
 			Self::Token(x) => &x.loc,
 			
+			Self::Args(x) => &x.loc,
 			Self::AssignExpr(x) => &x.loc,
 			Self::BinExpr(x) => &x.loc,
 			Self::ConstDecl(x) => &x.loc,
@@ -128,6 +130,7 @@ pub fn parse(filename: &str) -> Result<Node, Feedback> {
 
 	let mut parser_builder = ParserBuilder::<Node, Feedback>::new(&lexer.rules().iter().map(|x| x.name().as_str()).collect::<Vec<&str>>());
 
+	parser_builder.add_patterns(&ARGS_PATTERNS).unwrap();
 	parser_builder.add_patterns(&ASSIGN_PATTERNS).unwrap();
 	parser_builder.add_patterns(&BIN_OP_PATTERNS).unwrap();
 	parser_builder.add_patterns(&CONST_DECL_PATTERNS).unwrap();

@@ -1,3 +1,4 @@
+mod args;
 mod assign_expr;
 mod bin_expr;
 mod const_decl;
@@ -18,6 +19,7 @@ mod type_;
 mod unary_expr;
 mod var_decl;
 
+pub use args::*;
 pub use assign_expr::*;
 pub use bin_expr::*;
 pub use const_decl::*;
