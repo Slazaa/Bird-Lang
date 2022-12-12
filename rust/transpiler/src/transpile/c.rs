@@ -30,7 +30,7 @@ typedef unsigned long long u64;
 typedef float f32;
 typedef double f64;
 
-typedef u32 char_;
+typedef u32 __char__;
 
 #endif\
 ";
@@ -201,7 +201,10 @@ impl Transpiler {
 	}
 	
 	fn eval_literal(&mut self, literal: &Literal) -> Result<String, Feedback> {
-		Ok(format!("{}", literal.value))
+		Ok(match literal.kind {
+			LiteralKind::Chr => format!("U{}", literal.value),
+			_ => format!("{}", literal.value)
+		})
 	}
 
 	fn eval_program(&mut self, program: &Program) -> Result<String, Feedback> {

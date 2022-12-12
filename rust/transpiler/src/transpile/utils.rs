@@ -13,7 +13,7 @@ pub fn type_infer(expr: &Expr) -> Result<String, Feedback> {
 
 			match x.kind {
 				LiteralKind::Bool => "bool".to_owned(),
-				LiteralKind::Chr  => "char_".to_owned(),
+				LiteralKind::Chr  => "__char__".to_owned(),
 				LiteralKind::Flt  => {
 					if 	value.parse::<f64>().unwrap() >= f32::MAX.into() {
 						"f64".to_owned()
