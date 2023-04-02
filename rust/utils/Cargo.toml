@@ -1,7 +1,0 @@
-[package]
-name = "bird_utils"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-parse = { git = "https://github.com/Slazaa/Rust-Parse" }

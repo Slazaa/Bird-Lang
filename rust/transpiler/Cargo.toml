@@ -1,9 +1,0 @@
-[package]
-name = "birdt"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-parse = { git = "https://github.com/Slazaa/Rust-Parse" }
-bird_parser = { git = "https://github.com/Slazaa/Bird-Lang" }
-bird_utils = { git = "https://github.com/Slazaa/Bird-Lang" }
