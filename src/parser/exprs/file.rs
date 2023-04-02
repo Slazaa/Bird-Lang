@@ -1,6 +1,6 @@
 use nom::{
 	IResult, Parser,
-	combinator::{all_consuming, opt},
+	combinator::all_consuming,
 	multi::many0
 };
 
@@ -19,9 +19,9 @@ pub struct File<'a> {
 
 impl<'a> File<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		all_consuming(
-			ws(many0(ws(Expr::parse).terminated(opt(tag(";")))))
-		)
+		all_consuming(ws(many0(
+			ws(Expr::parse).terminated(tag(";"))
+		)))
 			.parse(input)
 			.map(|(input, exprs)| {
 				(input, Self { exprs })

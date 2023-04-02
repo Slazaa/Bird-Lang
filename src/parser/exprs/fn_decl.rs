@@ -1,7 +1,7 @@
 use nom::{
 	IResult, Parser,
 	sequence::{tuple, delimited},
-	multi::separated_list0,
+	multi::separated_list1,
 	combinator::opt
 };
 
@@ -33,22 +33,22 @@ impl<'a> ParamDecl<'a> {
 }
 
 #[derive(Debug)]
-pub struct ProcDecl<'a> {
-	pub inputs:	Vec<ParamDecl<'a>>,
+pub struct FnDecl<'a> {
+	pub inputs:	Option<Vec<ParamDecl<'a>>>,
 	pub output: Option<Expr<'a>>,
 	pub body: Expr<'a>
 }
 
-impl<'a> ProcDecl<'a> {
+impl<'a> FnDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-			ws(delimited(
-				tag("("), separated_list0(tag(","), ws(ParamDecl::parse)), tag(")")
-			)),
+			opt(ws(delimited(
+				tag("("), separated_list1(tag(","), ws(ParamDecl::parse)), tag(")")
+			))),
 			opt(ws(Expr::parse).preceded_by(tag("->"))),
 			ws(Expr::parse)
 		))
-		 	.preceded_by(tag("proc"))
+		 	.preceded_by(tag("fn"))
 			.parse(input)
 			.map(|(input, (inputs, output, body))| {
 				(input, Self { inputs, output, body })

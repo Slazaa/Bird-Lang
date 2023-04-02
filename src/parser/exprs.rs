@@ -19,22 +19,22 @@ use self::{
 	},
 	block::Block,
 	box_decl::BoxDecl,
-	ident::Ident,
-	proc_decl::ProcDecl
+	fn_decl::FnDecl,
+	ident::Ident
 };
 
 pub mod block;
 pub mod box_decl;
 pub mod file;
+pub mod fn_decl;
 pub mod ident;
 pub mod literals;
-pub mod proc_decl;
 
-pub const RESERVED: [&str; 12] = [
-    "box"   , "else", "false" ,
-    "if"    , "impl", "import",
-    "mut"   , "proc", "pub"   ,
-    "struct", "true", "while"
+pub const RESERVED: [&str; 11] = [
+    "box" , "else"  , "false",
+	"fn"  , "if"    , "mut"  ,
+	"pub" , "struct", "trait",
+	"true", "while"
 ];
 
 pub fn ws<I, O, E>(parser: impl Parser<I, O, E>) -> impl FnMut(I) -> IResult<I, O, E>
@@ -63,18 +63,20 @@ pub enum Expr<'a> {
 	// ----------
 	Block(Box<Block<'a>>),
 	BoxDecl(Box<BoxDecl<'a>>),
-	Ident(Ident<'a>),
-	ProcDecl(Box<ProcDecl<'a>>)
+	FnDecl(Box<FnDecl<'a>>),
+	Ident(Ident<'a>)
 }
 
 impl<'a> Expr<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		alt((
+			// ----------
 			map(Block::parse, |x| Expr::Block(Box::new(x))),
 			map(BoxDecl::parse, |x| Expr::BoxDecl(Box::new(x))),
+			map(FnDecl::parse, |x| Expr::FnDecl(Box::new(x))),
 			map(Ident::parse, |x| Expr::Ident(x)),
-			map(ProcDecl::parse, |x| Expr::ProcDecl(Box::new(x))),
 
+			// Literals
 			map(Bool::parse, |x| Expr::Bool(x)),
 			map(Char::parse, |x| Expr::Char(x)),
 			map(Float::parse, |x| Expr::Float(x)),
