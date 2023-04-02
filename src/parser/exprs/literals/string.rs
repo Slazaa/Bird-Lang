@@ -1,18 +1,22 @@
 use nom::{
 	IResult, Parser,
-	character::complete::digit1
+	bytes::complete::take_until
 };
 
-use nom_supreme::error::ErrorTree;
+use nom_supreme::{
+	error::ErrorTree,
+	tag::complete::tag, ParserExt
+};
 
 #[derive(Debug)]
-pub struct Int<'a> {
+pub struct String<'a> {
 	pub value: &'a str
 }
 
-impl<'a> Int<'a> {
+impl<'a> String<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		digit1
+		take_until("\"")
+			.delimited_by(tag("\""))
 			.parse(input)
 			.map(|(input, value)| {
 				(input, Self { value })

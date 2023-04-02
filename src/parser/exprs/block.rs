@@ -1,26 +1,26 @@
 use nom::{
 	IResult, Parser,
-	combinator::{all_consuming, opt},
-	multi::many0
+	sequence::delimited,
+	multi::many0,
+	combinator::opt
 };
 
 use nom_supreme::{
-	ParserExt,
-	error::ErrorTree,
-	tag::complete::tag
+	tag::complete::tag,
+	error::ErrorTree, ParserExt
 };
 
 use super::{Expr, ws};
 
 #[derive(Debug)]
-pub struct File<'a> {
+pub struct Block<'a> {
 	pub exprs: Vec<Expr<'a>>
 }
 
-impl<'a> File<'a> {
+impl<'a> Block<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		all_consuming(
-			ws(many0(ws(Expr::parse).terminated(opt(tag(";")))))
+		delimited(
+			tag("{"), ws(many0(ws(Expr::parse).terminated(opt(tag(";"))))), tag("}")
 		)
 			.parse(input)
 			.map(|(input, exprs)| {
