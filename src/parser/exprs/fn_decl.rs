@@ -11,19 +11,19 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-use super::{ident::Ident, Expr, ws};
+use super::{Expr, ident::Ident, r#type::Type, ws};
 
 #[derive(Debug)]
 pub struct ParamDecl<'a> {
 	pub ident: Ident<'a>,
-	pub r#type: Option<Expr<'a>>
+	pub r#type: Option<Type<'a>>
 }
 
 impl<'a> ParamDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
 			ws(Ident::parse),
-			opt(ws(Expr::parse).preceded_by(tag(":")))
+			opt(ws(Type::parse).preceded_by(tag(":")))
 		))
 			.parse(input)
 			.map(|(input, (ident, r#type))| {
@@ -34,8 +34,8 @@ impl<'a> ParamDecl<'a> {
 
 #[derive(Debug)]
 pub struct FnDecl<'a> {
-	pub inputs:	Option<Vec<ParamDecl<'a>>>,
-	pub output: Option<Expr<'a>>,
+	pub inputs:	Vec<ParamDecl<'a>>,
+	pub output: Option<Type<'a>>,
 	pub body: Expr<'a>
 }
 
@@ -44,8 +44,8 @@ impl<'a> FnDecl<'a> {
 		tuple((
 			opt(ws(delimited(
 				tag("("), separated_list1(tag(","), ws(ParamDecl::parse)), tag(")")
-			))),
-			opt(ws(Expr::parse).preceded_by(tag("->"))),
+			))).map(|e| if let Some(e) = e { e } else { Vec::new() }),
+			opt(ws(Type::parse).preceded_by(tag("->"))),
 			ws(Expr::parse)
 		))
 		 	.preceded_by(tag("fn"))

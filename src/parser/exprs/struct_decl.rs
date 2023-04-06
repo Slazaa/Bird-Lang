@@ -10,19 +10,19 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-use super::{ident::Ident, ws, Expr};
+use super::{ident::Ident, r#type::Type, ws};
 
 #[derive(Debug)]
 pub struct Field<'a> {
 	pub ident: Option<Ident<'a>>,
-	pub r#type: Expr<'a>
+	pub r#type: Type<'a>
 }
 
 impl<'a> Field<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
 			opt(ws(Ident::parse).terminated(tag(":"))),
-			ws(Expr::parse)
+			ws(Type::parse)
 		))
 			.parse(input)
 			.map(|(input, (ident, r#type))| {

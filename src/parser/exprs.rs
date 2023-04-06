@@ -19,11 +19,14 @@ use self::{
 	},
 	block::Block,
 	box_decl::BoxDecl,
+    enum_decl::EnumDecl,
 	fn_call::FnCall,
 	fn_decl::FnDecl,
 	ident::Ident,
 	path::Path,
-	struct_decl::StructDecl, enum_decl::EnumDecl
+	struct_decl::StructDecl,
+    struct_val::StructVal,
+    r#type::Type
 };
 
 pub mod block;
@@ -36,6 +39,8 @@ pub mod ident;
 pub mod literals;
 pub mod path;
 pub mod struct_decl;
+pub mod struct_val;
+pub mod r#type;
 
 pub const RESERVED: [&str; 14] = [
     "box"  , "else"  , "enum" ,
@@ -76,7 +81,9 @@ pub enum Expr<'a> {
 	FnDecl(Box<FnDecl<'a>>),
 	Ident(Ident<'a>),
 	Path(Path<'a>),
-	StructDecl(StructDecl<'a>)
+	StructDecl(StructDecl<'a>),
+    StructVal(Box<StructVal<'a>>),
+    Type(Box<Type<'a>>)
 }
 
 impl<'a> Expr<'a> {
@@ -86,10 +93,13 @@ impl<'a> Expr<'a> {
 			map(Block::parse, |x| Expr::Block(Box::new(x))),
 			map(BoxDecl::parse, |x| Expr::BoxDecl(Box::new(x))),
 			map(EnumDecl::parse, |x| Expr::EnumDecl(x)),
+			map(Path::parse_fn_call, |x| Expr::Path(x)),
 			map(FnCall::parse, |x| Expr::FnCall(Box::new(x))),
 			map(FnDecl::parse, |x| Expr::FnDecl(Box::new(x))),
-			map(Path::parse, |x| Expr::Path(x)),
 			map(StructDecl::parse, |x| Expr::StructDecl(x)),
+			map(StructVal::parse, |x| Expr::StructVal(Box::new(x))),
+
+			map(Path::parse_ident, |x| Expr::Path(x)),
 
 			// Literals
 			map(Bool::parse, |x| Expr::Bool(x)),
