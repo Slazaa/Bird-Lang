@@ -46,6 +46,14 @@ box main = fn {
 
 };
 ```
+Also arrays can look a bit long.
+```br 
+Array.from(.{ 1, 2, 3 });
+```
+So maybe something like that could be nice.
+```br 
+[ 1, 2, 3 ];
+```
 
 ## Can I start playing with it ?
 Unfortunately no, for now only a Rust version of the parser is available. But
