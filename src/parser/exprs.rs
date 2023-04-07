@@ -3,7 +3,6 @@ use nom::{
 	error::ParseError,
 	sequence::delimited,
 	character::complete::multispace0,
-	combinator::map,
 	branch::alt
 };
 
@@ -23,10 +22,12 @@ use self::{
 	fn_call::FnCall,
 	fn_decl::FnDecl,
 	ident::Ident,
+    r#if::If,
 	path::Path,
 	struct_decl::StructDecl,
     struct_val::StructVal,
-    r#type::Type
+    r#type::Type,
+    r#while::While
 };
 
 pub mod block;
@@ -36,11 +37,13 @@ pub mod file;
 pub mod fn_call;
 pub mod fn_decl;
 pub mod ident;
+pub mod r#if;
 pub mod literals;
 pub mod path;
 pub mod struct_decl;
 pub mod struct_val;
 pub mod r#type;
+pub mod r#while;
 
 pub const RESERVED: [&str; 14] = [
     "box"  , "else"  , "enum" ,
@@ -80,33 +83,37 @@ pub enum Expr<'a> {
 	FnCall(Box<FnCall<'a>>),
 	FnDecl(Box<FnDecl<'a>>),
 	Ident(Ident<'a>),
+    If(Box<If<'a>>),
 	Path(Path<'a>),
 	StructDecl(StructDecl<'a>),
     StructVal(Box<StructVal<'a>>),
-    Type(Box<Type<'a>>)
+    Type(Box<Type<'a>>),
+    While(Box<While<'a>>)
 }
 
 impl<'a> Expr<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		alt((
 			// ----------
-			map(Block::parse, |x| Expr::Block(Box::new(x))),
-			map(BoxDecl::parse, |x| Expr::BoxDecl(Box::new(x))),
-			map(EnumDecl::parse, |x| Expr::EnumDecl(x)),
-			map(Path::parse_fn_call, |x| Expr::Path(x)),
-			map(FnCall::parse, |x| Expr::FnCall(Box::new(x))),
-			map(FnDecl::parse, |x| Expr::FnDecl(Box::new(x))),
-			map(StructDecl::parse, |x| Expr::StructDecl(x)),
-			map(StructVal::parse, |x| Expr::StructVal(Box::new(x))),
+			Block::parse.map(|x| Expr::Block(Box::new(x))),
+			BoxDecl::parse.map(|x| Expr::BoxDecl(Box::new(x))),
+			EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
+            If::parse.map(|x| Expr::If(Box::new(x))),
+			Path::parse_fn_call.map(|x| Expr::Path(x)),
+			FnCall::parse.map(|x| Expr::FnCall(Box::new(x))),
+			FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
+			StructDecl::parse.map(|x| Expr::StructDecl(x)),
+			StructVal::parse.map(|x| Expr::StructVal(Box::new(x))),
+            While::parse.map(|x| Expr::While(Box::new(x))),
 
-			map(Path::parse_ident, |x| Expr::Path(x)),
+			Path::parse_ident.map(|x| Expr::Path(x)),
 
 			// Literals
-			map(Bool::parse, |x| Expr::Bool(x)),
-			map(Char::parse, |x| Expr::Char(x)),
-			map(Float::parse, |x| Expr::Float(x)),
-			map(Int::parse, |x| Expr::Int(x)),
-			map(String::parse, |x| Expr::String(x))
+			Bool::parse.map(|x| Expr::Bool(x)),
+		    Char::parse.map(|x| Expr::Char(x)),
+			Float::parse.map(|x| Expr::Float(x)),
+			Int::parse.map(|x| Expr::Int(x)),
+			String::parse.map(|x| Expr::String(x))
 		))(input)
 	}
 }
