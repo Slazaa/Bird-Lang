@@ -1,3 +1,4 @@
+# Bird
 Hey, I'm Slazaa, and this is my programming language Bird!
 
 ## What is it ?
