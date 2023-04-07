@@ -24,7 +24,7 @@ And Zig by it's compile time feature, and how it handles memory through
 allocators that you can pass everywhere you need allocations. And also through
 its build system, with a Bird file.
 
-## What does a Hello World program looks like ?
+## What does it looks like ?
 Here is a Hello World program!
 ```br 
 box std = import("std");
