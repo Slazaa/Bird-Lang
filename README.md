@@ -46,6 +46,6 @@ box main = fn {
 };
 ```
 
-## How can I start playing with it ?
+## Can I start playing with it ?
 Unfortunately no, for now only a Rust version of the parser is available. But
 I'm working on making the C transpiler ready!
