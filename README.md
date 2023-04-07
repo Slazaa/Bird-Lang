@@ -52,7 +52,7 @@ Array.from(.{ 1, 2, 3 });
 ```
 So maybe something like that could be nice.
 ```br 
-[ 1, 2, 3 ];
+[1, 2, 3];
 ```
 
 ## Can I start playing with it ?
