@@ -1,8 +1,7 @@
 use nom::{
 	IResult, Parser,
 	sequence::delimited,
-	multi::separated_list0,
-	combinator::opt
+	multi::many0
 };
 
 use nom_supreme::{
@@ -19,9 +18,9 @@ pub struct Block<'a> {
 
 impl<'a> Block<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		delimited(tag("{"), 
-			ws(separated_list0(tag(";"), ws(Expr::parse)).terminated(opt(tag(";")))), 
-		tag("}"))
+		delimited(
+            tag("{"), ws(many0(ws(Expr::parse).terminated(tag(";")))), tag("}")
+        )
 			.parse(input)
 			.map(|(input, exprs)| {
 				(input, Self { exprs })

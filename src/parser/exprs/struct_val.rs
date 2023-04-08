@@ -3,7 +3,7 @@ use nom::{
     combinator::opt,
     sequence::{tuple, delimited},
     branch::alt,
-    multi::separated_list1
+    multi::separated_list0
 };
 
 use nom_supreme::{
@@ -47,7 +47,7 @@ impl<'a> StructVal<'a> {
                 tag(".").map(|_| None)
             ))),
             ws(delimited(
-                tag("{"), ws(separated_list1(tag(","), ws(FieldVal::parse))), tag("}")
+                tag("{"), ws(separated_list0(tag(","), ws(FieldVal::parse))), tag("}")
             ))
         ))
             .parse(input)

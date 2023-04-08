@@ -1,6 +1,7 @@
 use std::{env, fs};
 
 mod parser;
+mod transpiler;
 
 fn main() {
     let args: Vec<String> = env::args()
@@ -23,5 +24,17 @@ fn main() {
         }
     };
 
-    println!("{:#?}", parser::exprs::file::File::parse(&source));
+    let ast = match parser::parse_file(&source) {
+        Ok(x) => x,
+        Err(e) => {
+            println!("{}", e);
+            return;
+        }
+    };
+
+    println!("--- AST ---\n{:#?}", ast);
+
+    let c_source = transpiler::c::transpile_file(&ast);
+
+    println!("--- C SOURCE ---\n{:#?}", c_source);
 }

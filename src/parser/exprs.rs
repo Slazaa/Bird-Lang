@@ -19,14 +19,17 @@ use self::{
 	block::Block,
 	box_decl::BoxDecl,
     enum_decl::EnumDecl,
+    file::File,
 	fn_call::FnCall,
 	fn_decl::FnDecl,
 	ident::Ident,
+    r#impl::Impl,
     r#if::If,
 	path::Path,
 	struct_decl::StructDecl,
     struct_val::StructVal,
     r#type::Type,
+    vis::Vis,
     r#while::While
 };
 
@@ -38,11 +41,13 @@ pub mod fn_call;
 pub mod fn_decl;
 pub mod ident;
 pub mod r#if;
+pub mod r#impl;
 pub mod literals;
 pub mod path;
 pub mod struct_decl;
 pub mod struct_val;
 pub mod r#type;
+pub mod vis;
 pub mod r#while;
 
 pub const RESERVED: [&str; 14] = [
@@ -62,12 +67,6 @@ where
 }
 
 #[derive(Debug)]
-pub enum Vis {
-	Private,
-	Public
-}
-
-#[derive(Debug)]
 pub enum Expr<'a> {
 	// Literals
 	Bool(Bool),
@@ -80,10 +79,12 @@ pub enum Expr<'a> {
 	Block(Box<Block<'a>>),
 	BoxDecl(Box<BoxDecl<'a>>),
 	EnumDecl(EnumDecl<'a>),
+    File(File<'a>),
 	FnCall(Box<FnCall<'a>>),
 	FnDecl(Box<FnDecl<'a>>),
 	Ident(Ident<'a>),
     If(Box<If<'a>>),
+    Impl(Box<Impl<'a>>),
 	Path(Path<'a>),
 	StructDecl(StructDecl<'a>),
     StructVal(Box<StructVal<'a>>),
@@ -99,6 +100,7 @@ impl<'a> Expr<'a> {
 			BoxDecl::parse.map(|x| Expr::BoxDecl(Box::new(x))),
 			EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
             If::parse.map(|x| Expr::If(Box::new(x))),
+            Impl::parse.map(|x| Expr::Impl(Box::new(x))),
 			Path::parse_fn_call.map(|x| Expr::Path(x)),
 			FnCall::parse.map(|x| Expr::FnCall(Box::new(x))),
 			FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
