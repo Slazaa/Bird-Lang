@@ -36,5 +36,5 @@ fn main() {
 
     let c_source = transpiler::c::transpile_file(&ast);
 
-    println!("--- C SOURCE ---\n{:#?}", c_source);
+    println!("--- C SOURCE ---\n{}", c_source);
 }
