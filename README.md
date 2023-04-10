@@ -48,7 +48,7 @@ box main = fn {
 ```
 Also arrays can look a bit long.
 ```br 
-Array.from(.{ 1, 2, 3 });
+Array(int).from(.{ 1, 2, 3 });
 ```
 So maybe something like that could be nice.
 ```br 
