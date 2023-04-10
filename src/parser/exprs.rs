@@ -65,17 +65,17 @@ pub const RESERVED: [&str; 14] = [
 
 
 pub fn ignore_comment(input: &str) -> IResult<&str, (), ErrorTree<&str>> {
-	many0(not_line_ending.preceded_by(tag("#")))
+	not_line_ending.preceded_by(tag("#"))
 		.parse(input)
 		.map(|(input, _)| (input, ()))
 }
 
-pub fn ws<'a, O, F>(f: F) -> impl FnMut(&str) -> IResult<&str, O, ErrorTree<&str>>
+pub fn ws<'a, O, F>(f: F) -> impl FnMut(&'a str) -> IResult<&'a str, O, ErrorTree<&'a str>>
 where
 	F: Parser<&'a str, O, ErrorTree<&'a str>>
 {
 	fn parser(input: &str) -> IResult<&str, (), ErrorTree<&str>> {
-		many0(alt((multispace1, ignore_comment)))
+		many0(alt((multispace1.map(|_| ()), ignore_comment)))
 			.parse(input)
 			.map(|(input, _)| (input, ()))
 	}
