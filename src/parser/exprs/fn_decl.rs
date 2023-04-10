@@ -15,7 +15,7 @@ use super::{Expr, ident::Ident, r#type::Type, ws};
 
 #[derive(Debug)]
 pub struct ParamDecl<'a> {
-    pub comp: bool,
+	pub comp: bool,
 	pub ident: Ident<'a>,
 	pub r#type: Type<'a>
 }
@@ -23,7 +23,7 @@ pub struct ParamDecl<'a> {
 impl<'a> ParamDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-            opt(tag("comp")).map(|e| e.is_some()),
+			opt(tag("comp")).map(|e| e.is_some()),
 			ws(Ident::parse),
 			ws(Type::parse).preceded_by(tag(":"))
 		))

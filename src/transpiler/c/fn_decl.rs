@@ -2,63 +2,63 @@ use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis
 use super::{ident, r#type};
 
 pub fn transpile_param_decl(input: &ParamDecl) -> String {
-    let ident = ident::transpile(&input.ident);
-    let r#type = r#type::transpile(&input.r#type);
+	let ident = ident::transpile(&input.ident);
+	let r#type = r#type::transpile(&input.r#type);
 
-    format!("{type} {ident}")
+	format!("{type} {ident}")
 }
 
 pub fn transpile_param_decls(input: &[ParamDecl]) -> String {
-    let mut res = if input.is_empty() {
-        String::new()
-    } else {
-        transpile_param_decl(&input[0])
-    };
+	let mut res = if input.is_empty() {
+		return "void".to_owned();
+	} else {
+		transpile_param_decl(&input[0])
+	};
 
-    for input in input.iter().skip(1) {
-        res += &format!(", {}", transpile_param_decl(input));
-    }
+	for input in input.iter().skip(1) {
+		res += &format!(", {}", transpile_param_decl(input));
+	}
 
-    res
+	res
 }
 
 pub fn transpile_sig(input: &BoxDecl) -> Result<String, ()> {
-    let ident = ident::transpile(&input.ident);
+	let vis = match input.vis {
+		Vis::Private => "static ".to_string(),
+		Vis::Public => "".to_string()
+	};
 
-    let value = match &input.value {
-        Some(Expr::FnDecl(x)) => x,
-        _ => return Err(())
-    };
+	let ident = ident::transpile(&input.ident);
 
-    let inputs = transpile_param_decls(&value.inputs);
+	let value = match &input.value {
+		Some(Expr::FnDecl(x)) => x,
+		_ => return Err(())
+	};
 
-    let output = match &value.output {
-        Some(output) => r#type::transpile(output),
-        None => "void".to_owned()
-    };
+	let inputs = transpile_param_decls(&value.inputs);
 
-    Ok(format!("{output} {ident}({inputs});"))
+	let output = match &value.output {
+		Some(output) => r#type::transpile(output),
+		None => "void".to_owned()
+	};
+
+	Ok(format!("{vis}{output} {ident}({inputs});"))
 }
 
 pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
-    let vis = match input.vis {
-        Vis::Private => "static ".to_string(),
-        Vis::Public => "".to_string()
-    };
+	let ident = ident::transpile(&input.ident);
 
-    let ident = ident::transpile(&input.ident);
+	let value = match &input.value {
+		Some(Expr::FnDecl(x)) => x,
+		_ => return Err(())
+	};
 
-    let value = match &input.value {
-        Some(Expr::FnDecl(x)) => x,
-        _ => return Err(())
-    };
+	let inputs = transpile_param_decls(&value.inputs);
 
-    let inputs = transpile_param_decls(&value.inputs);
+	let output = match &value.output {
+		Some(output) => r#type::transpile(output),
+		None => "void".to_owned()
+	};
 
-    let output = match &value.output {
-        Some(output) => r#type::transpile(output),
-        None => "void".to_owned()
-    };
-
-    Ok(format!("{vis}{output} {ident}({inputs}) {{}}"))
+	Ok(format!("{output} {ident}({inputs}) {{}}"))
 }

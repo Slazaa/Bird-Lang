@@ -23,7 +23,7 @@ pub struct BoxDecl<'a> {
 impl<'a> BoxDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-            ws(Vis::parse).terminated(tag("box")),
+			ws(Vis::parse).terminated(tag("box")),
 			opt(ws(tag("mut"))).map(|e| e.is_some()),
 			ws(Ident::parse),
 			opt(ws(Type::parse).preceded_by(tag(":"))),

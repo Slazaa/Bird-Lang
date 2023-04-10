@@ -19,8 +19,8 @@ pub struct Block<'a> {
 impl<'a> Block<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		delimited(
-            tag("{"), ws(many0(ws(Expr::parse).terminated(tag(";")))), tag("}")
-        )
+			tag("{"), ws(many0(ws(Expr::parse.terminated(tag(";"))))), tag("}")
+		)
 			.parse(input)
 			.map(|(input, exprs)| {
 				(input, Self { exprs })
