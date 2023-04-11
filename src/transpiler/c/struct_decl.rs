@@ -20,6 +20,11 @@ pub fn transpile_fields(input: &[Field]) -> String {
 }
 
 pub fn transpile(input: &StructDecl) -> String {
-	let fields = transpile_fields(input.fields.as_ref().unwrap());
+	let fields = if let Some(fields) = input.fields.as_ref() {
+		transpile_fields(fields)
+	} else {
+		"{}".to_owned()
+	};
+
 	format!("struct {fields}")
 }
