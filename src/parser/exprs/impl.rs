@@ -10,7 +10,7 @@ use nom_supreme::{
 
 use super::{ws, r#type::Type, block::Block};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Impl<'a> {
 	pub r#type: Type<'a>,
 	pub body: Block<'a>

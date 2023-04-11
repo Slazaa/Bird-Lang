@@ -17,7 +17,7 @@ use crate::parser::exprs::ws;
 
 use super::{Expr, block::Block, path::Path};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FnCall<'a> {
 	pub expr: Expr<'a>,
 	pub inputs: Vec<Expr<'a>>

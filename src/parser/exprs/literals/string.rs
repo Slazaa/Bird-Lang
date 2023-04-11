@@ -8,7 +8,7 @@ use nom_supreme::{
 	tag::complete::tag, ParserExt
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct String<'a> {
 	pub value: &'a str
 }

@@ -9,7 +9,7 @@ use nom_supreme::{
 	tag::complete::tag 
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Float<'a> {
 	pub value: &'a str
 }

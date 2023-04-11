@@ -10,7 +10,7 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Char<'a> {
 	pub value: &'a str
 }

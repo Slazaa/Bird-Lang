@@ -8,7 +8,7 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Bool {
 	pub value: bool
 }

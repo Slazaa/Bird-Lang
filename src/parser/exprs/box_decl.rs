@@ -11,7 +11,7 @@ use nom_supreme::{
 
 use super::{Expr, Vis, ident::Ident, r#type::Type, ws};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BoxDecl<'a> {
 	pub vis: Vis,
 	pub r#mut: bool,

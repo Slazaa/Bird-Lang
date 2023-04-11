@@ -1,5 +1,5 @@
-use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis};
-use super::{ident, r#type};
+use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis, literals::int::Int};
+use super::{ident, r#type, block};
 
 pub fn transpile_param_decl(input: &ParamDecl) -> String {
 	let ident = ident::transpile(&input.ident);
@@ -55,10 +55,22 @@ pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
 
 	let inputs = transpile_param_decls(&value.inputs);
 
-	let output = match &value.output {
-		Some(output) => r#type::transpile(output),
-		None => "void".to_owned()
+	let output = if ident != "main" {
+		match &value.output {
+			Some(output) => r#type::transpile(output),
+			None => "void".to_owned()
+		}
+	} else {
+		"int".to_owned()
 	};
 
-	Ok(format!("{output} {ident}({inputs}) {{}}"))
+	let mut body = value.body.clone();
+	
+	if ident == "main" {
+		body.exprs.push(Expr::Int(Int { value: "0" }))
+	}
+
+	let body = block::transpile(&body);
+
+	Ok(format!("{output} {ident}({inputs}) {body}"))
 }

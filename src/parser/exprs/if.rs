@@ -13,13 +13,13 @@ use nom_supreme::{
 
 use super::{Expr, ws, block::Block};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IfBranch<'a> {
 	ElseIf(Box<If<'a>>),
 	Else(Block<'a>)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct If<'a> {
 	pub cond: Expr<'a>,
 	pub body: Block<'a>,

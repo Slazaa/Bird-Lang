@@ -11,7 +11,7 @@ use nom_supreme::{
 
 use super::{Expr, ws};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct File<'a> {
 	pub exprs: Vec<Expr<'a>>
 }

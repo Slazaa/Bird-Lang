@@ -14,7 +14,7 @@ use nom_supreme::{
 
 use super::{Expr, ws, ident::Ident, r#type::Type};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FieldVal<'a> {
 	pub name: Option<Ident<'a>>,
 	pub value: Expr<'a>
@@ -33,7 +33,7 @@ impl<'a> FieldVal<'a> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructVal<'a> {
 	pub expr: Option<Type<'a>>,
 	pub field_vals: Vec<FieldVal<'a>>

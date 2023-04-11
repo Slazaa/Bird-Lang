@@ -13,7 +13,7 @@ use nom_supreme::{
 
 use super::{Expr, ident::Ident, fn_call::FnCall};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Path<'a> {
 	pub exprs: Vec<Expr<'a>>
 }

@@ -10,7 +10,7 @@ use nom_supreme::{
 
 use super::{Expr, block::Block, enum_decl::EnumDecl, fn_call::FnCall, struct_decl::StructDecl, path::Path};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Type<'a> {
 	pub value: Expr<'a>
 }

@@ -14,7 +14,7 @@ use nom_supreme::{
 
 use super::RESERVED;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ident<'a> {
 	pub value: &'a str
 }

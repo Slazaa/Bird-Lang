@@ -1,4 +1,5 @@
 use std::{env, fs};
+use clang_format::clang_format;
 
 mod parser;
 mod transpiler;
@@ -34,7 +35,13 @@ fn main() {
 
 	println!("--- AST ---\n{:#?}", ast);
 
-	let c_source = transpiler::c::transpile_file(&ast);
+	let c_source = match clang_format(&transpiler::c::transpile_file(&ast)) {
+		Ok(x) => x,
+		Err(e) => {
+			println!("{:?}", e);
+			return;
+		}
+	};
 
 	println!("--- C SOURCE ---\n{}", c_source);
 }

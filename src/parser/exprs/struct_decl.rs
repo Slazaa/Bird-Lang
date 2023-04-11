@@ -12,7 +12,7 @@ use nom_supreme::{
 
 use super::{ident::Ident, r#type::Type, ws};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Field<'a> {
 	pub ident: Option<Ident<'a>>,
 	pub r#type: Type<'a>
@@ -31,7 +31,7 @@ impl<'a> Field<'a> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructDecl<'a> {
 	pub fields: Option<Vec<Field<'a>>>
 }

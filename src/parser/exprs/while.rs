@@ -11,7 +11,7 @@ use nom_supreme::{
 
 use super::{Expr, ws, block::Block};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct While<'a> {
 	pub cond: Expr<'a>,
 	pub body: Block<'a>

@@ -83,7 +83,7 @@ where
 	delimited(parser, f, parser)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr<'a> {
 	// Literals
 	Bool(Bool),

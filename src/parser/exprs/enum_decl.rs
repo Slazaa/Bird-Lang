@@ -12,7 +12,7 @@ use nom_supreme::{
 
 use super::{ident::Ident, ws, struct_decl::Field};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumVal<'a> {
 	pub ident: Ident<'a>,
 	pub fields: Option<Vec<Field<'a>>>
@@ -33,7 +33,7 @@ impl<'a> EnumVal<'a> {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumDecl<'a> {
 	pub values: Vec<EnumVal<'a>>
 }

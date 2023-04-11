@@ -5,7 +5,7 @@ use nom::{
 
 use nom_supreme::error::ErrorTree;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Int<'a> {
 	pub value: &'a str
 }
