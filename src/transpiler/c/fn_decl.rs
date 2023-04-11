@@ -1,4 +1,4 @@
-use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis, literals::int::Int};
+use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis, literals::int::Int, r#return::Return};
 use super::{ident, r#type, block};
 
 pub fn transpile_param_decl(input: &ParamDecl) -> String {
@@ -67,7 +67,7 @@ pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
 	let mut body = value.body.clone();
 	
 	if ident == "main" {
-		body.exprs.push(Expr::Int(Int { value: "0" }))
+		body.exprs.push(Expr::Return(Box::new(Return { value: Expr::Int(Int { value: "0" }) })))
 	}
 
 	let body = block::transpile(&body);

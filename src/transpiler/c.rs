@@ -7,6 +7,7 @@ pub mod ident;
 pub mod literals;
 pub mod r#if;
 pub mod path;
+pub mod r#return;
 pub mod r#type;
 pub mod var_decl;
 pub mod r#while;
@@ -22,6 +23,7 @@ pub fn transpile(input: &Expr) -> String {
 		Expr::BoxDecl(expr) => var_decl::transpile(expr),
 		Expr::Ident(expr) => ident::transpile(expr),
 		Expr::If(expr) => r#if::transpile(expr),
+		Expr::Return(expr) => r#return::transpile(expr),
 		Expr::While(expr) => r#while::transpile(expr),
 
 		_ => todo!("{:?}", input)

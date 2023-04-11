@@ -31,6 +31,7 @@ use self::{
 	r#impl::Impl,
 	r#if::If,
 	path::Path,
+	r#return::Return,
 	struct_decl::StructDecl,
 	struct_val::StructVal,
 	r#type::Type,
@@ -49,18 +50,19 @@ pub mod r#if;
 pub mod r#impl;
 pub mod literals;
 pub mod path;
+pub mod r#return;
 pub mod struct_decl;
 pub mod struct_val;
 pub mod r#type;
 pub mod vis;
 pub mod r#while;
 
-pub const RESERVED: [&str; 14] = [
-	"box"  , "else"  , "enum" ,
-	"false", "fn"    , "if"   ,
-	"impl" , "match" , "mut"  ,
-	"pub"  , "struct", "trait",
-	"true" , "while"
+pub const RESERVED: [&str; 15] = [
+	"box"  , "else"  , "enum"  ,
+	"false", "fn"    , "if"    ,
+	"impl" , "match" , "mut"   ,
+	"pub"  , "return", "struct",
+	"trait", "true"  , "while"
 ];
 
 
@@ -103,6 +105,7 @@ pub enum Expr<'a> {
 	If(Box<If<'a>>),
 	Impl(Box<Impl<'a>>),
 	Path(Path<'a>),
+	Return(Box<Return<'a>>),
 	StructDecl(StructDecl<'a>),
 	StructVal(Box<StructVal<'a>>),
 	Type(Box<Type<'a>>),
@@ -119,6 +122,7 @@ impl<'a> Expr<'a> {
 			If::parse.map(|x| Expr::If(Box::new(x))),
 			Impl::parse.map(|x| Expr::Impl(Box::new(x))),
 			Path::parse_fn_call.map(|x| Expr::Path(x)),
+			Return::parse.map(|x| Expr::Return(Box::new(x))),
 			FnCall::parse.map(|x| Expr::FnCall(Box::new(x))),
 			FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
 			StructDecl::parse.map(|x| Expr::StructDecl(x)),
