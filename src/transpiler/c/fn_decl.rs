@@ -3,7 +3,7 @@ use super::{ident, r#type, block};
 
 pub fn transpile_param_decl(input: &ParamDecl) -> String {
 	let ident = ident::transpile(&input.ident);
-	let r#type = r#type::transpile(&input.r#type);
+	let r#type = r#type::transpile(input.r#type.as_ref().unwrap());
 
 	format!("{type} {ident}")
 }

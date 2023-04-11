@@ -14,7 +14,9 @@ pub fn transpile(input: &File) -> String {
 				}
 
 				res += &transpiled;
-			}
+			} else {
+				res += &super::transpile(expr);
+			},
 			_ => res += &super::transpile(expr)
 		}
 	}

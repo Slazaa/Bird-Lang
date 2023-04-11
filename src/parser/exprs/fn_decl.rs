@@ -17,7 +17,7 @@ use super::{ident::Ident, r#type::Type, block::Block, ws};
 pub struct ParamDecl<'a> {
 	pub comp: bool,
 	pub ident: Ident<'a>,
-	pub r#type: Type<'a>
+	pub r#type: Option<Type<'a>>
 }
 
 impl<'a> ParamDecl<'a> {
@@ -25,7 +25,7 @@ impl<'a> ParamDecl<'a> {
 		tuple((
 			opt(tag("comp")).map(|e| e.is_some()),
 			ws(Ident::parse),
-			ws(Type::parse).preceded_by(tag(":"))
+			opt(ws(Type::parse).preceded_by(tag(":")))
 		))
 			.parse(input)
 			.map(|(input, (comp, ident, r#type))| {

@@ -21,6 +21,7 @@ use self::{
 		int::Int,
 		string::String
 	},
+	assign::Assign,
 	block::Block,
 	box_decl::BoxDecl,
 	enum_decl::EnumDecl,
@@ -39,6 +40,7 @@ use self::{
 	r#while::While
 };
 
+pub mod assign;
 pub mod block;
 pub mod box_decl;
 pub mod enum_decl;
@@ -95,6 +97,7 @@ pub enum Expr<'a> {
 	String(String<'a>),
 
 	// ----------
+	Assign(Box<Assign<'a>>),
 	Block(Box<Block<'a>>),
 	BoxDecl(Box<BoxDecl<'a>>),
 	EnumDecl(EnumDecl<'a>),
@@ -116,6 +119,7 @@ impl<'a> Expr<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		alt((
 			// ----------
+			Assign::parse.map(|x| Expr::Assign(Box::new(x))),
 			Block::parse.map(|x| Expr::Block(Box::new(x))),
 			BoxDecl::parse.map(|x| Expr::BoxDecl(Box::new(x))),
 			EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
