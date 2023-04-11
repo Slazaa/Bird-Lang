@@ -18,6 +18,8 @@ pub mod r#while;
 
 use literals::*;
 
+const PRIMITIVES: &str = "typedef enum{false,true}bool;";
+
 pub fn transpile(input: &Expr) -> String {
 	match &input {
 		Expr::Bool(expr) => bool::transpile(expr),
@@ -40,5 +42,5 @@ pub fn transpile(input: &Expr) -> String {
 }
 
 pub fn transpile_file(input: &File) -> String {
-	file::transpile(input)
+	PRIMITIVES.to_owned() + &file::transpile(input)
 }

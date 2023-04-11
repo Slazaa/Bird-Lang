@@ -4,7 +4,7 @@ pub fn transpile_field(input: &Field, next_anon_field: &mut i32) -> String {
 	let ident = if let Some(ident) = &input.ident {
 		ident::transpile(ident)
 	} else {
-		let res = format!("{}", next_anon_field) + "_";
+		let res = "_".to_owned() + &format!("{}", next_anon_field);
 		*next_anon_field += 1;
 		res 
 	};

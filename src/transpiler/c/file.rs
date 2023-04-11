@@ -16,13 +16,16 @@ pub fn transpile(input: &File) -> String {
 				res += &transpiled;
 			} else if let Ok(transpiled) = typedef::transpile(box_decl) {
 				res += &transpiled;
+				res += ";";
 			} else {
 				res += &super::transpile(expr);
+				res += ";";
 			},
-			_ => res += &super::transpile(expr)
+			_ => {
+				res += &super::transpile(expr);
+				res += ";";
+			}
 		}
-
-		res += ";";
 	}
 
 	fn_sigs + &res
