@@ -25,7 +25,6 @@ use self::{
 	block::Block,
 	box_decl::BoxDecl,
 	enum_decl::EnumDecl,
-	file::File,
 	fn_call::FnCall,
 	fn_decl::FnDecl,
 	ident::Ident,
@@ -35,7 +34,6 @@ use self::{
 	r#return::Return,
 	struct_decl::StructDecl,
 	struct_val::StructVal,
-	r#type::Type,
 	vis::Vis,
 	r#while::While
 };
@@ -101,7 +99,6 @@ pub enum Expr<'a> {
 	Block(Box<Block<'a>>),
 	BoxDecl(Box<BoxDecl<'a>>),
 	EnumDecl(EnumDecl<'a>),
-	File(File<'a>),
 	FnCall(Box<FnCall<'a>>),
 	FnDecl(Box<FnDecl<'a>>),
 	Ident(Ident<'a>),
@@ -111,7 +108,6 @@ pub enum Expr<'a> {
 	Return(Box<Return<'a>>),
 	StructDecl(StructDecl<'a>),
 	StructVal(Box<StructVal<'a>>),
-	Type(Box<Type<'a>>),
 	While(Box<While<'a>>)
 }
 

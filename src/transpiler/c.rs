@@ -20,6 +20,7 @@ pub fn transpile(input: &Expr) -> String {
 	match &input {
 		Expr::Bool(expr) => bool::transpile(expr),
 		Expr::Int(expr) => int::transpile(expr),
+		Expr::String(expr) => string::transpile(expr),
 
 		Expr::Assign(expr) => assign::transpile(expr),
 		Expr::Block(expr) => block::transpile(expr),

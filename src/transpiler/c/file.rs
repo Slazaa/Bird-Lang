@@ -19,6 +19,8 @@ pub fn transpile(input: &File) -> String {
 			},
 			_ => res += &super::transpile(expr)
 		}
+
+		res += ";";
 	}
 
 	fn_sigs + &res

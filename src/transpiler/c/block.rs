@@ -1,11 +1,18 @@
-use crate::parser::exprs::block::Block;
+use crate::parser::exprs::{block::Block, Expr};
 
 pub fn transpile(input: &Block) -> String {
-    let mut exprs = String::new();
+	let mut exprs = String::new();
 
-    for expr in &input.exprs {
-        exprs += &super::transpile(expr);
-    }    
+	for expr in &input.exprs {
+		exprs += &super::transpile(expr);
 
-    format!("{{{}}}", exprs)
+		match expr {
+			Expr::Block(_) |
+			Expr::If(_) |
+			Expr::While(_) => { },
+			_ => exprs += ";"
+		}
+	}    
+
+	format!("{{{}}}", exprs)
 }
