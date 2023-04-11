@@ -10,7 +10,9 @@ pub mod literals;
 pub mod r#if;
 pub mod path;
 pub mod r#return;
+pub mod struct_decl;
 pub mod r#type;
+pub mod typedef;
 pub mod var_decl;
 pub mod r#while;
 
@@ -29,6 +31,7 @@ pub fn transpile(input: &Expr) -> String {
 		Expr::Ident(expr) => ident::transpile(expr),
 		Expr::If(expr) => r#if::transpile(expr),
 		Expr::Path(expr) => path::transpile(expr),
+		Expr::StructDecl(expr) => struct_decl::transpile(expr),
 		Expr::Return(expr) => r#return::transpile(expr),
 		Expr::While(expr) => r#while::transpile(expr),
 
