@@ -23,6 +23,8 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 		Expr::Int(_) => type_from("comp_int"),
 		Expr::String(_) => type_from("str"),
 
+		Expr::StructDecl(_) |
+		Expr::EnumDecl(_) => type_from("type"),
 		Expr::FnDecl(expr) => {
 			let input_types: Vec<&Type> = expr.inputs.iter()
 				.map(|x| x.r#type.as_ref().unwrap())

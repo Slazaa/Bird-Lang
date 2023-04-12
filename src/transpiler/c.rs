@@ -23,13 +23,13 @@ typedef enum{false,true}bool;\
 \
 typedef i8 signed char;\
 typedef i16 signed short;\
-typedef i32 signed long;\
-typedef i64 signed long long;\
+typedef i32 signed int;\
+typedef i64 signed long;\
 \
 typedef u8 unsigned char;\
 typedef u16 unsigned short;\
-typedef u32 unsigned long;\
-typedef u64 unsigned long long;\
+typedef u32 unsigned int;\
+typedef u64 unsigned long;\
 \
 typedef char_ u32;\
 typedef str const u8*;\
