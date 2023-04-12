@@ -18,11 +18,28 @@ pub mod r#while;
 
 use literals::*;
 
-const PRIMITIVES: &str = "typedef enum{false,true}bool;";
+const PRIMITIVES: &str = "\
+typedef enum{false,true}bool;\
+\
+typedef i8 signed char;\
+typedef i16 signed short;\
+typedef i32 signed long;\
+typedef i64 signed long long;\
+\
+typedef u8 unsigned char;\
+typedef u16 unsigned short;\
+typedef u32 unsigned long;\
+typedef u64 unsigned long long;\
+\
+typedef char_ u32;\
+typedef str const u8*;\
+";
 
 pub fn transpile(input: &Expr) -> String {
 	match &input {
 		Expr::Bool(expr) => bool::transpile(expr),
+		Expr::Char(expr) => char::transpile(expr),
+		Expr::Float(expr) => float::transpile(expr),
 		Expr::Int(expr) => int::transpile(expr),
 		Expr::String(expr) => string::transpile(expr),
 

@@ -34,6 +34,7 @@ use self::{
 	r#return::Return,
 	struct_decl::StructDecl,
 	struct_val::StructVal,
+	r#type::Type,
 	vis::Vis,
 	r#while::While
 };
@@ -108,6 +109,7 @@ pub enum Expr<'a> {
 	Return(Box<Return<'a>>),
 	StructDecl(StructDecl<'a>),
 	StructVal(Box<StructVal<'a>>),
+	Type(Box<Type<'a>>),
 	While(Box<While<'a>>)
 }
 
