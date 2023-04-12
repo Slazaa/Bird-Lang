@@ -7,7 +7,12 @@ pub mod box_decl;
 pub mod fn_decl;
 
 pub fn type_from(input: &str) -> Type {
-	Type { value: Expr::Path(Path { exprs: vec![Expr::Ident(Ident { value: input })] }) }
+	Type {
+		value: Expr::Path(Path {
+			exprs: vec![Expr::Ident(Ident { value: input })]
+		}),
+		ptr_kind: None
+	}
 }
 
 pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
@@ -43,18 +48,19 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 						})),
 						Expr::Type(Box::new(ret_type))
 					],
-				}))
+				})),
+				ptr_kind: None
 			}
 		}
 
-		_ => type_from("void")
+		_ => todo!("{:?}", input)
 	}
 }
 
 pub fn infer<'a>(input: &Expr<'a>) -> Result<Expr<'a>, String> {
 	Ok(match &input {
 		Expr::Block(expr) => Expr::Block(Box::new(block::infer(expr)?)),
-		Expr::BoxDecl(expr) if expr.value.is_some() => Expr::BoxDecl(Box::new(box_decl::infer(expr)?)),
+		Expr::BoxDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::BoxDecl(Box::new(box_decl::infer(expr)?)),
 		Expr::FnDecl(expr) => Expr::FnDecl(Box::new(fn_decl::infer(expr)?)),
 		_ => input.clone()
 	})
