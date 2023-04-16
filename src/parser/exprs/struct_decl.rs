@@ -14,14 +14,14 @@ use super::{ident::Ident, r#type::Type, ws};
 
 #[derive(Debug, Clone)]
 pub struct Field<'a> {
-	pub ident: Option<Ident<'a>>,
+	pub ident: Ident<'a>,
 	pub r#type: Type<'a>
 }
 
 impl<'a> Field<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-			opt(ws(Ident::parse).terminated(tag(":"))),
+			ws(Ident::parse).terminated(tag(":")),
 			ws(Type::parse)
 		))
 			.parse(input)

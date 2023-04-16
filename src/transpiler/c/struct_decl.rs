@@ -1,14 +1,7 @@
 use crate::{parser::exprs::struct_decl::{StructDecl, Field}, transpiler::c::{r#type, ident}};
 
-pub fn transpile_field(input: &Field, next_anon_field: &mut i32) -> String {
-	let ident = if let Some(ident) = &input.ident {
-		ident::transpile(ident)
-	} else {
-		let res = "_".to_owned() + &format!("{}", next_anon_field);
-		*next_anon_field += 1;
-		res 
-	};
-
+pub fn transpile_field(input: &Field) -> String {
+	let ident = ident::transpile(&input.ident);
 	let r#type = r#type::transpile(&input.r#type);	
 	
 	format!("{type} {ident}")
@@ -16,10 +9,9 @@ pub fn transpile_field(input: &Field, next_anon_field: &mut i32) -> String {
 
 pub fn transpile_fields(input: &[Field]) -> String {
 	let mut res = "{".to_owned();
-	let mut next_anon_field = 0;
 
 	for field in input {
-		res += &format!("{};", transpile_field(field, &mut next_anon_field));
+		res += &format!("{};", transpile_field(field));
 	}
 
 	res += "}";
