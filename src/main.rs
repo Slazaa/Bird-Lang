@@ -3,6 +3,7 @@ use clang_format::clang_format;
 
 mod parser;
 mod type_infer;
+mod comptime;
 mod transpiler;
 
 fn main() {

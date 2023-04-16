@@ -58,12 +58,12 @@ pub mod r#type;
 pub mod vis;
 pub mod r#while;
 
-pub const RESERVED: [&str; 15] = [
+pub const RESERVED: [&str; 14] = [
 	"box"  , "else"  , "enum"  ,
 	"false", "fn"    , "if"    ,
 	"impl" , "match" , "mut"   ,
 	"pub"  , "return", "struct",
-	"trait", "true"  , "while"
+	"true" , "while"
 ];
 
 
