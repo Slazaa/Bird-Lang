@@ -41,7 +41,6 @@ pub fn transpile(input: &Expr) -> String {
 		Expr::Char(expr) => char::transpile(expr),
 		Expr::Float(expr) => float::transpile(expr),
 		Expr::Int(expr) => int::transpile(expr),
-		Expr::String(expr) => string::transpile(expr),
 
 		Expr::Assign(expr) => assign::transpile(expr),
 		Expr::Block(expr) => block::transpile(expr),
