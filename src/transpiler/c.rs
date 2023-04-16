@@ -8,7 +8,6 @@ pub mod fn_decl;
 pub mod ident;
 pub mod literals;
 pub mod r#if;
-pub mod r#impl;
 pub mod path;
 pub mod r#return;
 pub mod struct_decl;

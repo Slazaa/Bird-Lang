@@ -5,7 +5,6 @@ use crate::parser::exprs::{file::File, Expr, r#type::Type, path::Path, ident::Id
 pub mod block;
 pub mod box_decl;
 pub mod fn_decl;
-pub mod r#impl;
 
 pub fn type_from(input: &str) -> Type {
 	Type {
@@ -65,7 +64,6 @@ pub fn infer<'a>(input: &Expr<'a>) -> Result<Expr<'a>, String> {
 		Expr::Block(expr) => Expr::Block(Box::new(block::infer(expr)?)),
 		Expr::BoxDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::BoxDecl(Box::new(box_decl::infer(expr)?)),
 		Expr::FnDecl(expr) => Expr::FnDecl(Box::new(fn_decl::infer(expr)?)),
-		Expr::Impl(expr) => Expr::Impl(Box::new(r#impl::infer(expr)?)),
 		_ => input.clone()
 	})
 }
