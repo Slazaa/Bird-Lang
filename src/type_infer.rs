@@ -27,7 +27,7 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 		Expr::EnumDecl(_) => type_from("type"),
 		Expr::FnDecl(expr) => {
 			let input_types: Vec<&Type> = expr.inputs.iter()
-				.map(|x| x.r#type.as_ref().unwrap())
+				.map(|x| &x.r#type)
 				.collect();
 
 			let input_field_vals: Vec<FieldVal> = input_types.iter()
