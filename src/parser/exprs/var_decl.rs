@@ -12,7 +12,7 @@ use nom_supreme::{
 use super::{Expr, Vis, ident::Ident, r#type::Type, ws};
 
 #[derive(Debug, Clone)]
-pub struct BoxDecl<'a> {
+pub struct VarDecl<'a> {
 	pub vis: Vis,
 	pub r#mut: bool,
 	pub ident: Ident<'a>,
@@ -20,13 +20,13 @@ pub struct BoxDecl<'a> {
 	pub value: Option<Expr<'a>>
 }
 
-impl<'a> BoxDecl<'a> {
+impl<'a> VarDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-			ws(Vis::parse).terminated(tag("box")),
+			ws(Vis::parse),
 			opt(ws(tag("mut"))).map(|e| e.is_some()),
 			ws(Ident::parse),
-			opt(ws(Type::parse).preceded_by(tag(":"))),
+			opt(ws(Type::parse)).preceded_by(tag(":")),
 			opt(ws(Expr::parse).preceded_by(tag("=")))
 		))
 			.parse(input)

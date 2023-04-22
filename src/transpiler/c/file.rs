@@ -1,31 +1,17 @@
-use crate::parser::exprs::{Expr, file::File};
+use crate::parser::exprs::{file::File, Expr};
 
-use super::{fn_decl, typedef};
+use super::fn_decl;
 
 pub fn transpile(input: &File) -> String {
 	let mut fn_sigs = String::new();
 	let mut res = String::new();
 
 	for expr in &input.exprs {
-		match expr {
-			Expr::BoxDecl(box_decl) => if let Ok(transpiled) = fn_decl::transpile(box_decl) {
-				if box_decl.ident.value != "main" {
-					fn_sigs += &fn_decl::transpile_sig(box_decl).unwrap();
-				}
-
-				res += &transpiled;
-			} else if let Ok(transpiled) = typedef::transpile(box_decl) {
-				res += &transpiled;
-				res += ";";
-			} else {
-				res += &super::transpile(expr);
-				res += ";";
-			},
-			_ => {
-				res += &super::transpile(expr);
-				res += ";";
-			}
+		if let Expr::FnDecl(expr) = expr {
+			fn_sigs += &fn_decl::transpile_sig(expr);
 		}
+
+		res += &super::transpile(expr);
 	}
 
 	fn_sigs + &res

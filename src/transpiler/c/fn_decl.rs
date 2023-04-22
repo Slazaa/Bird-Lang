@@ -1,4 +1,4 @@
-use crate::parser::exprs::{Expr, fn_decl::ParamDecl, box_decl::BoxDecl, vis::Vis, literals::int::Int, r#return::Return};
+use crate::parser::exprs::{Expr, fn_decl::{ParamDecl, FnDecl}, vis::Vis, literals::int::Int, r#return::Return};
 use super::{ident, r#type, block};
 
 pub fn transpile_param_decl(input: &ParamDecl) -> String {
@@ -22,41 +22,29 @@ pub fn transpile_param_decls(input: &[ParamDecl]) -> String {
 	res
 }
 
-pub fn transpile_sig(input: &BoxDecl) -> Result<String, ()> {
+pub fn transpile_sig(input: &FnDecl) -> String {
 	let vis = match input.vis {
 		Vis::Private => "static ".to_string(),
 		Vis::Public => "".to_string()
 	};
 
 	let ident = ident::transpile(&input.ident);
+	let inputs = transpile_param_decls(&input.inputs);
 
-	let value = match &input.value {
-		Some(Expr::FnDecl(x)) => x,
-		_ => return Err(())
-	};
-
-	let inputs = transpile_param_decls(&value.inputs);
-
-	let output = match &value.output {
+	let output = match &input.output {
 		Some(output) => r#type::transpile(output),
 		None => "void".to_owned()
 	};
 
-	Ok(format!("{vis}{output} {ident}({inputs});"))
+	format!("{vis}{output} {ident}({inputs});")
 }
 
-pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
+pub fn transpile(input: &FnDecl) -> String {
 	let ident = ident::transpile(&input.ident);
-
-	let value = match &input.value {
-		Some(Expr::FnDecl(x)) => x,
-		_ => return Err(())
-	};
-
-	let inputs = transpile_param_decls(&value.inputs);
+	let inputs = transpile_param_decls(&input.inputs);
 
 	let output = if ident != "main" {
-		match &value.output {
+		match &input.output {
 			Some(output) => r#type::transpile(output),
 			None => "void".to_owned()
 		}
@@ -64,7 +52,7 @@ pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
 		"int".to_owned()
 	};
 
-	let mut body = value.body.clone();
+	let mut body = input.body.clone();
 	
 	if ident == "main" {
 		body.exprs.push(Expr::Return(Box::new(Return { value: Expr::Int(Int { value: "0" }) })))
@@ -72,5 +60,5 @@ pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
 
 	let body = block::transpile(&body);
 
-	Ok(format!("{output} {ident}({inputs}) {body}"))
+	format!("{output} {ident}({inputs}) {body}")
 }

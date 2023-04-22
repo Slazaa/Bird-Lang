@@ -1,9 +1,7 @@
-use std::ops::Deref;
-
-use crate::parser::exprs::{file::File, Expr, r#type::Type, path::Path, ident::Ident, fn_call::FnCall, struct_val::{StructVal, FieldVal}};
+use crate::parser::exprs::{file::File, Expr, r#type::Type, path::Path, ident::Ident};
 
 pub mod block;
-pub mod box_decl;
+pub mod var_decl;
 pub mod fn_decl;
 
 pub fn type_from(input: &str) -> Type {
@@ -25,35 +23,6 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 
 		Expr::StructDecl(_) |
 		Expr::EnumDecl(_) => type_from("type"),
-		Expr::FnDecl(expr) => {
-			let input_types: Vec<&Type> = expr.inputs.iter()
-				.map(|x| &x.r#type)
-				.collect();
-
-			let input_field_vals: Vec<FieldVal> = input_types.iter()
-				.map(|x| FieldVal { name: None, value: Expr::Type(Box::new(x.deref().clone())) })
-				.collect();
-
-			let ret_type = if let Some(output) = &expr.output {
-				output.clone()
-			} else {
-				type_from("void")
-			};
-
-			Type {
-				value: Expr::FnCall(Box::new(FnCall {
-					expr: Expr::Path(Path { exprs: vec![Expr::Ident(Ident { value: "Proc" })] }),
-					inputs: vec![
-						Expr::StructVal(Box::new(StructVal {
-							expr: None,
-							field_vals: input_field_vals
-						})),
-						Expr::Type(Box::new(ret_type))
-					],
-				})),
-				ptr_kind: None
-			}
-		}
 
 		_ => todo!("{:?}", input)
 	}
@@ -62,7 +31,7 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 pub fn infer<'a>(input: &Expr<'a>) -> Result<Expr<'a>, String> {
 	Ok(match &input {
 		Expr::Block(expr) => Expr::Block(Box::new(block::infer(expr)?)),
-		Expr::BoxDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::BoxDecl(Box::new(box_decl::infer(expr)?)),
+		Expr::VarDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::VarDecl(Box::new(var_decl::infer(expr)?)),
 		Expr::FnDecl(expr) => Expr::FnDecl(Box::new(fn_decl::infer(expr)?)),
 		_ => input.clone()
 	})

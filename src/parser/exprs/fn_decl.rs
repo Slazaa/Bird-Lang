@@ -11,7 +11,7 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-use super::{ident::Ident, r#type::Type, block::Block, ws};
+use super::{ident::Ident, r#type::Type, block::Block, ws, vis::Vis};
 
 #[derive(Debug, Clone)]
 pub struct ParamDecl<'a> {
@@ -36,6 +36,8 @@ impl<'a> ParamDecl<'a> {
 
 #[derive(Debug, Clone)]
 pub struct FnDecl<'a> {
+	pub vis: Vis,
+	pub ident: Ident<'a>,
 	pub inputs:	Vec<ParamDecl<'a>>,
 	pub output: Option<Type<'a>>,
 	pub body: Block<'a>
@@ -44,6 +46,8 @@ pub struct FnDecl<'a> {
 impl<'a> FnDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
+			ws(Vis::parse),
+			ws(Ident::parse),
 			opt(ws(delimited(
 				tag("("), separated_list1(tag(","), ws(ParamDecl::parse)), tag(")")
 			))).map(|e| if let Some(e) = e { e } else { Vec::new() }),
@@ -52,8 +56,8 @@ impl<'a> FnDecl<'a> {
 		))
 		 	.preceded_by(tag("fn"))
 			.parse(input)
-			.map(|(input, (inputs, output, body))| {
-				(input, Self { inputs, output, body })
+			.map(|(input, (vis, ident, inputs, output, body))| {
+				(input, Self { vis, ident, inputs, output, body })
 			})
 	}
 }
