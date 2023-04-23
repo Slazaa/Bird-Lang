@@ -44,6 +44,7 @@ pub fn transpile(input: &Expr) -> String {
 
 		Expr::Assign(expr) => assign::transpile(expr),
 		Expr::Block(expr) => block::transpile(expr),
+		Expr::BoxDecl(expr) => var_decl::transpile(expr),
 		Expr::FnCall(expr) => fn_call::transpile(expr),
 		Expr::FnDecl(expr) => fn_decl::transpile(expr),
 		Expr::Ident(expr) => ident::transpile(expr),
@@ -51,7 +52,6 @@ pub fn transpile(input: &Expr) -> String {
 		Expr::Path(expr) => path::transpile(expr),
 		Expr::Return(expr) => r#return::transpile(expr),
 		Expr::StructDecl(expr) => struct_decl::transpile(expr),
-		Expr::VarDecl(expr) => var_decl::transpile(expr),
 		Expr::While(expr) => r#while::transpile(expr),
 
 		_ => todo!("{:?}", input)

@@ -46,7 +46,7 @@ pub struct FnDecl<'a> {
 impl<'a> FnDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
-			ws(Vis::parse),
+			ws(Vis::parse).terminated(tag("fn")),
 			ws(Ident::parse),
 			opt(ws(delimited(
 				tag("("), separated_list1(tag(","), ws(ParamDecl::parse)), tag(")")
@@ -54,7 +54,6 @@ impl<'a> FnDecl<'a> {
 			opt(ws(Type::parse).preceded_by(tag("->"))),
 			ws(Block::parse)
 		))
-		 	.preceded_by(tag("fn"))
 			.parse(input)
 			.map(|(input, (vis, ident, inputs, output, body))| {
 				(input, Self { vis, ident, inputs, output, body })

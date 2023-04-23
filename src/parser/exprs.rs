@@ -23,6 +23,7 @@ use self::{
 	},
 	assign::Assign,
 	block::Block,
+	box_decl::BoxDecl,
 	enum_decl::EnumDecl,
 	fn_call::FnCall,
 	fn_decl::FnDecl,
@@ -33,13 +34,13 @@ use self::{
 	struct_decl::StructDecl,
 	struct_val::StructVal,
 	r#type::Type,
-	var_decl::VarDecl,
 	vis::Vis,
 	r#while::While
 };
 
 pub mod assign;
 pub mod block;
+pub mod box_decl;
 pub mod enum_decl;
 pub mod file;
 pub mod fn_call;
@@ -52,7 +53,6 @@ pub mod r#return;
 pub mod struct_decl;
 pub mod struct_val;
 pub mod r#type;
-pub mod var_decl;
 pub mod vis;
 pub mod r#while;
 
@@ -96,6 +96,7 @@ pub enum Expr<'a> {
 	// ----------
 	Assign(Box<Assign<'a>>),
 	Block(Box<Block<'a>>),
+	BoxDecl(Box<BoxDecl<'a>>),
 	EnumDecl(EnumDecl<'a>),
 	FnCall(Box<FnCall<'a>>),
 	FnDecl(Box<FnDecl<'a>>),
@@ -106,7 +107,6 @@ pub enum Expr<'a> {
 	StructDecl(StructDecl<'a>),
 	StructVal(Box<StructVal<'a>>),
 	Type(Box<Type<'a>>),
-	VarDecl(Box<VarDecl<'a>>),
 	While(Box<While<'a>>)
 }
 
@@ -116,6 +116,7 @@ impl<'a> Expr<'a> {
 			// ----------
 			Assign::parse.map(|x| Expr::Assign(Box::new(x))),
 			Block::parse.map(|x| Expr::Block(Box::new(x))),
+			BoxDecl::parse.map(|x| Expr::BoxDecl(Box::new(x))),
 			EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
 			If::parse.map(|x| Expr::If(Box::new(x))),
 			Path::parse_fn_call.map(|x| Expr::Path(x)),
@@ -124,7 +125,6 @@ impl<'a> Expr<'a> {
 			FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
 			StructDecl::parse.map(|x| Expr::StructDecl(x)),
 			StructVal::parse.map(|x| Expr::StructVal(Box::new(x))),
-			VarDecl::parse.map(|x| Expr::VarDecl(Box::new(x))),
 			While::parse.map(|x| Expr::While(Box::new(x))),
 
 			Path::parse_ident.map(|x| Expr::Path(x)),

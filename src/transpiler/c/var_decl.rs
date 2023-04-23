@@ -1,6 +1,6 @@
-use crate::{parser::exprs::var_decl::VarDecl, transpiler::c::{r#type, ident}};
+use crate::{parser::exprs::box_decl::BoxDecl, transpiler::c::{r#type, ident}};
 
-pub fn transpile(input: &VarDecl) -> String {
+pub fn transpile(input: &BoxDecl) -> String {
 	let r#type = r#type::transpile(input.r#type.as_ref().unwrap());
 	let ident = ident::transpile(&input.ident);
 

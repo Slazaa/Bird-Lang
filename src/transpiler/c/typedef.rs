@@ -1,8 +1,8 @@
-use crate::parser::exprs::var_decl::VarDecl;
+use crate::parser::exprs::box_decl::BoxDecl;
 
 use super::{r#type, ident};
 
-pub fn transpile(input: &VarDecl) -> Result<String, ()> {
+pub fn transpile(input: &BoxDecl) -> Result<String, ()> {
 	let r#type = match &input.r#type {
 		Some(x) => x,
 		None => return Err(())

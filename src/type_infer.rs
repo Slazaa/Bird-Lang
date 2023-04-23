@@ -31,7 +31,7 @@ pub fn infer_from_value<'a>(input: &Expr<'a>) -> Type<'a> {
 pub fn infer<'a>(input: &Expr<'a>) -> Result<Expr<'a>, String> {
 	Ok(match &input {
 		Expr::Block(expr) => Expr::Block(Box::new(block::infer(expr)?)),
-		Expr::VarDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::VarDecl(Box::new(var_decl::infer(expr)?)),
+		Expr::BoxDecl(expr) if expr.r#type.is_none() && expr.value.is_some() => Expr::BoxDecl(Box::new(var_decl::infer(expr)?)),
 		Expr::FnDecl(expr) => Expr::FnDecl(Box::new(fn_decl::infer(expr)?)),
 		_ => input.clone()
 	})
