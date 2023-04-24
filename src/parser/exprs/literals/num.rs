@@ -1,6 +1,9 @@
+
 use nom::{
 	IResult, Parser,
-	character::complete::digit1
+	character::complete::digit1,
+	combinator::opt,
+	sequence::tuple
 };
 
 use nom_supreme::{
@@ -10,14 +13,19 @@ use nom_supreme::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Float<'a> {
+pub struct Num<'a> {
 	pub value: &'a str
 }
 
-impl<'a> Float<'a> {
+impl<'a> Num<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		tag(".")
-			.delimited_by(digit1)
+		tuple((
+			digit1,
+			opt(
+				tag(".")
+				.terminated(digit1)
+			)
+		))
 			.recognize()
 			.parse(input)
 			.map(|(input, value)| {

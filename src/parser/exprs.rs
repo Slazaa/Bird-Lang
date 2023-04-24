@@ -17,8 +17,7 @@ use self::{
 	literals::{
 		bool::Bool,
 		char::Char,
-		float::Float,
-		int::Int,
+		num::Num,
 		string::String
 	},
 	assign::Assign,
@@ -89,8 +88,7 @@ pub enum Expr<'a> {
 	// Literals
 	Bool(Bool),
 	Char(Char<'a>),
-	Float(Float<'a>),
-	Int(Int<'a>),
+	Num(Num<'a>),
 	String(String<'a>),
 
 	// ----------
@@ -132,8 +130,7 @@ impl<'a> Expr<'a> {
 			// Literals
 			Bool::parse.map(|x| Expr::Bool(x)),
 			Char::parse.map(|x| Expr::Char(x)),
-			Float::parse.map(|x| Expr::Float(x)),
-			Int::parse.map(|x| Expr::Int(x)),
+			Num::parse.map(|x| Expr::Num(x)),
 			String::parse.map(|x| Expr::String(x))
 		))(input)
 	}
