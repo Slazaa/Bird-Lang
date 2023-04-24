@@ -1,7 +1,8 @@
 use nom::{
 	IResult, Parser,
 	sequence::{tuple, delimited},
-	combinator::opt, multi::separated_list1
+	combinator::opt,
+	multi::separated_list0
 };
 
 use nom_supreme::{
@@ -33,18 +34,22 @@ impl<'a> Field<'a> {
 
 #[derive(Debug, Clone)]
 pub struct StructDecl<'a> {
+	pub ident: Ident<'a>,
 	pub fields: Option<Vec<Field<'a>>>
 }
 
 impl<'a> StructDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		opt(ws(delimited(
-			tag("{"), ws(separated_list1(tag(","), ws(Field::parse))), tag("}")
-		)))
+		tuple((
+			ws(Ident::parse),
+			opt(ws(delimited(
+				tag("{"), ws(separated_list0(tag(","), ws(Field::parse))), tag("}")
+			)))
+		))
 			.preceded_by(tag("struct"))
 			.parse(input)
-			.map(|(input, fields)| {
-				(input, Self { fields })
+			.map(|(input, (ident, fields))| {
+				(input, Self { ident, fields })
 			})
 	}
 }

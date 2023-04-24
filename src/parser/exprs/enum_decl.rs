@@ -35,18 +35,22 @@ impl<'a> EnumVal<'a> {
 
 #[derive(Debug, Clone)]
 pub struct EnumDecl<'a> {
+	pub ident: Ident<'a>,
 	pub values: Vec<EnumVal<'a>>
 }
 
 impl<'a> EnumDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		ws(delimited(
-			tag("{"), ws(separated_list1(tag(","), ws(EnumVal::parse))), tag("}")
+		tuple((
+			ws(Ident::parse),
+			ws(delimited(
+				tag("{"), ws(separated_list1(tag(","), ws(EnumVal::parse))), tag("}")
+			))
 		))
 			.preceded_by(tag("enum"))
 			.parse(input)
-			.map(|(input, values)| {
-				(input, Self { values })
+			.map(|(input, (ident, values))| {
+				(input, Self { ident, values })
 			})
 	}
 }

@@ -1,6 +1,6 @@
 use nom::{
 	IResult, Parser,
-	multi::many0
+	multi::many0, branch::alt
 };
 
 use nom_supreme::{
@@ -9,7 +9,7 @@ use nom_supreme::{
 	tag::complete::tag
 };
 
-use super::{Expr, ws};
+use super::{Expr, ws, fn_decl::FnDecl, struct_decl::StructDecl, enum_decl::EnumDecl};
 
 #[derive(Debug, Clone)]
 pub struct File<'a> {
@@ -19,7 +19,12 @@ pub struct File<'a> {
 impl<'a> File<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		ws(many0(
-			ws(Expr::parse).terminated(tag(";"))
+			ws(alt((
+				EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
+				FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
+				StructDecl::parse.map(|x| Expr::StructDecl(x)),
+				Expr::parse.terminated(tag(";"))
+			)))
 		))
 			.all_consuming()
 			.parse(input)

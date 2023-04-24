@@ -1,10 +1,6 @@
 use std::{env, fs};
-use clang_format::clang_format;
 
 mod parser;
-mod type_infer;
-mod comptime;
-mod transpiler;
 
 fn main() {
 	let args: Vec<String> = env::args()
@@ -36,24 +32,4 @@ fn main() {
 	};
 
 	println!("--- AST ---\n{:#?}", ast);
-
-	let type_infered = match type_infer::infer_file(&ast) {
-		Ok(x) => x,
-		Err(e) => {
-			println!("{}", e);
-			return;
-		}
-	};
-
-	println!("--- Type infered ---\n{:#?}", type_infered);
-
-	let c_source = match clang_format(&transpiler::c::transpile_file(&type_infered)) {
-		Ok(x) => x,
-		Err(e) => {
-			println!("{:?}", e);
-			return;
-		}
-	};
-
-	println!("--- C SOURCE ---\n{}", c_source);
 }
