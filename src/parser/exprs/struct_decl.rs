@@ -1,8 +1,8 @@
 use nom::{
 	IResult, Parser,
 	sequence::{tuple, delimited},
-	combinator::opt,
-	multi::separated_list0
+	multi::separated_list1,
+	branch::alt
 };
 
 use nom_supreme::{
@@ -42,8 +42,9 @@ impl<'a> StructDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
 			ws(Ident::parse),
-			opt(ws(delimited(
-				tag("{"), ws(separated_list0(tag(","), ws(Field::parse))), tag("}")
+			ws(alt((
+				delimited(tag("{"), ws(separated_list1(tag(","), ws(Field::parse))), tag("}")).map(|x| Some(x)),
+				tag(";").map(|_| None)
 			)))
 		))
 			.preceded_by(tag("struct"))
