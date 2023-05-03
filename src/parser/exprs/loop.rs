@@ -1,6 +1,7 @@
 use nom::{
 	IResult, Parser,
-	sequence::tuple
+	sequence::tuple,
+	branch::alt
 };
 
 use nom_supreme::{
@@ -12,17 +13,21 @@ use nom_supreme::{
 use super::{Expr, ws, block::Block};
 
 #[derive(Debug, Clone)]
-pub struct While<'a> {
-	pub cond: Expr<'a>,
+pub struct Loop<'a> {
+	pub cond: Option<Expr<'a>>,
 	pub body: Block<'a>
 }
 
-impl<'a> While<'a> {
+impl<'a> Loop<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
-		tuple((
-			ws(Expr::parse).preceded_by(tag("while")),
-			ws(Block::parse)
+		alt((
+			ws(Block::parse).map(|x| (None, x)),
+			tuple((
+				ws(Expr::parse).map(|x| Some(x)),
+				ws(Block::parse)
+			))
 		))
+			.preceded_by(tag("loop"))
 			.parse(input)
 			.map(|(input, (cond, body))| {
 				(input, Self { cond, body })

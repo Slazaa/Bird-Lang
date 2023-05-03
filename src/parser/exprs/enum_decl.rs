@@ -10,7 +10,7 @@ use nom_supreme::{
 	tag::complete::tag, ParserExt
 };
 
-use super::{ident::Ident, ws, struct_decl::Field};
+use super::{ident::Ident, ws, struct_decl::Field, vis::Vis};
 
 #[derive(Debug, Clone)]
 pub struct EnumVal<'a> {
@@ -35,6 +35,7 @@ impl<'a> EnumVal<'a> {
 
 #[derive(Debug, Clone)]
 pub struct EnumDecl<'a> {
+	pub vis: Vis,
 	pub ident: Ident<'a>,
 	pub values: Vec<EnumVal<'a>>
 }
@@ -42,15 +43,15 @@ pub struct EnumDecl<'a> {
 impl<'a> EnumDecl<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		tuple((
+			ws(Vis::parse).terminated(tag("enum")),
 			ws(Ident::parse),
 			ws(delimited(
 				tag("{"), ws(separated_list1(tag(","), ws(EnumVal::parse))), tag("}")
 			))
 		))
-			.preceded_by(tag("enum"))
 			.parse(input)
-			.map(|(input, (ident, values))| {
-				(input, Self { ident, values })
+			.map(|(input, (vis, ident, values))| {
+				(input, Self { vis, ident, values })
 			})
 	}
 }

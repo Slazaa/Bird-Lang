@@ -20,10 +20,10 @@ impl<'a> File<'a> {
 	pub fn parse(input: &'a str) -> IResult<&str, Self, ErrorTree<&str>> {
 		ws(many0(
 			ws(alt((
+				Expr::parse.terminated(tag(";")),
 				EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
 				FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
 				StructDecl::parse.map(|x| Expr::StructDecl(x)),
-				Expr::parse.terminated(tag(";"))
 			)))
 		))
 			.all_consuming()

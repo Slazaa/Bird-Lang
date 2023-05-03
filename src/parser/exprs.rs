@@ -28,13 +28,13 @@ use self::{
 	fn_decl::FnDecl,
 	ident::Ident,
 	r#if::If,
+	r#loop::Loop,
 	path::Path,
 	r#return::Return,
 	struct_decl::StructDecl,
 	struct_val::StructVal,
 	r#type::Type,
 	vis::Vis,
-	r#while::While
 };
 
 pub mod assign;
@@ -47,20 +47,20 @@ pub mod fn_decl;
 pub mod ident;
 pub mod r#if;
 pub mod literals;
+pub mod r#loop;
 pub mod path;
 pub mod r#return;
 pub mod struct_decl;
 pub mod struct_val;
 pub mod r#type;
 pub mod vis;
-pub mod r#while;
 
 pub const RESERVED: [&str; 13] = [
-	"box"   , "else"  , "enum",
-	"false" , "fn"    , "if"  ,
-	"match" , "mut"   , "pub" ,
-	"return", "struct", "true",
-	"while"
+	"box"   , "else"  , "enum"  ,
+	"false" , "fn"    , "if"    ,
+	"loop"  , "match" , "mut"   ,
+	"pub"   , "return", "struct",
+	"true"  ,
 ];
 
 
@@ -100,12 +100,12 @@ pub enum Expr<'a> {
 	FnDecl(Box<FnDecl<'a>>),
 	Ident(Ident<'a>),
 	If(Box<If<'a>>),
+	Loop(Box<Loop<'a>>),
 	Path(Path<'a>),
 	Return(Box<Return<'a>>),
 	StructDecl(StructDecl<'a>),
 	StructVal(Box<StructVal<'a>>),
 	Type(Box<Type<'a>>),
-	While(Box<While<'a>>)
 }
 
 impl<'a> Expr<'a> {
@@ -117,13 +117,13 @@ impl<'a> Expr<'a> {
 			BoxDecl::parse.map(|x| Expr::BoxDecl(Box::new(x))),
 			EnumDecl::parse.map(|x| Expr::EnumDecl(x)),
 			If::parse.map(|x| Expr::If(Box::new(x))),
+			Loop::parse.map(|x| Expr::Loop(Box::new(x))),
 			Path::parse_fn_call.map(|x| Expr::Path(x)),
 			Return::parse.map(|x| Expr::Return(Box::new(x))),
 			FnCall::parse.map(|x| Expr::FnCall(Box::new(x))),
 			FnDecl::parse.map(|x| Expr::FnDecl(Box::new(x))),
 			StructDecl::parse.map(|x| Expr::StructDecl(x)),
 			StructVal::parse.map(|x| Expr::StructVal(Box::new(x))),
-			While::parse.map(|x| Expr::While(Box::new(x))),
 
 			Path::parse_ident.map(|x| Expr::Path(x)),
 
@@ -131,7 +131,7 @@ impl<'a> Expr<'a> {
 			Bool::parse.map(|x| Expr::Bool(x)),
 			Char::parse.map(|x| Expr::Char(x)),
 			Num::parse.map(|x| Expr::Num(x)),
-			String::parse.map(|x| Expr::String(x))
+			String::parse.map(|x| Expr::String(x)),
 		))(input)
 	}
 }
